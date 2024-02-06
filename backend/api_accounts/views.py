@@ -18,6 +18,8 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 
+from collections import deque
+
 from .models import Player, ExpiredTokens, Notification
 from .serializers import UserSerializer, RegisterSerializer, LoginSerializer, AvatarUpdateSerializer, NotificationSerializer, DeleteAccountSerializer, TwoFactorSetupSerializer
 from .validations import custom_validation, email_validation, password_validation, username_validation
@@ -29,8 +31,11 @@ from urllib.parse import urlencode
 import requests
 import pyotp
 import logging
+import uuid
 
 logger = logging.getLogger(__name__)
+
+matchmaking_queue = deque()
 
 # Create your views here.
 
@@ -116,6 +121,47 @@ class UserView(viewsets.ModelViewSet):
         queryset = Player.objects.exclude(id=request.user.id)
         serializer = UserSerializer(queryset, many=True, context={'request': request})
         return Response(serializer.data)
+
+def join_matchmaking(request):
+    user = request.user
+
+    # check if user is already in the queue
+    if user in matchmaking_queue:
+        return Response({'status': 'Already in the queue'}, status=status.HTTP_200_OK)
+    
+    # add user to the queue
+    matchmaking_queue.append(user)
+
+    # check if there are enough players in the queue
+    if len(matchmaking_queue) >= 2:
+        # create a game session
+        game_session_id = create_game_session(matchmaking_queue.popleft(), matchmaking_queue.popleft())
+
+        # notify players with game session id
+        return Response({'status': 'matched', 'game_session_id': game_session_id}, status=status.HTTP_200_OK)
+    
+    else:
+        return Response({'status': 'Waiting for players'}, status=status.HTTP_200_OK)
+
+game_sessions = {}
+
+def create_game_session(player1, player2):
+    game_session_id = str(uuid.uuid4())
+
+    game_state = initialize_game_state()
+
+    game_state['players'] = [player1, player2]
+
+    game_sessions[game_session_id] = game_state
+
+    return game_session_id
+
+def initialize_game_state():
+    game_state = {
+        'players': [],
+        'ball_position': {'x': 0, 'y': 0},
+    }
+    return game_state
 
 def authenticated(request):
     response = JsonResponse({'authenticated': request.user.is_authenticated})
