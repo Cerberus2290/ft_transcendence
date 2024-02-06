@@ -303,46 +303,6 @@ def update_stats(request):
         user.save()
     return JsonResponse({'success': 'Stats updated successfully!'}, status=status.HTTP_200_OK)
 
-class GameSessionViewSet(viewsets.ModelViewSet):
-    queryset = GameSession.objects.all()
-    serializer_class = GameSessionSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def perform_create(self, serializer):
-        # logic for creating game session
-        serializer.save(player1=self.request.user)
-
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def find_match(request):
-    current_user = request.user
-    with transaction.atomic():
-        player_in_queue = PlayerQueue.objects.select_for_update().order_by('timestamp')
-
-        if player_in_queue.filter(player=current_user).exists():
-            logger.info(f'Waiting in queue: {current_user.username}')
-            return Response({'status': 'waiting'})
-        # Check at least 2 players are in the queue
-        if player_in_queue.count() >= 2:
-            first_player = player_in_queue[0].player
-            second_player = player_in_queue[1].player
-
-            game_session = GameSession.objects.create(player1=first_player, player2=second_player)
-
-            PlayerQueue.objects.filter(player__in=[first_player, second_player]).delete()
-
-            logger.info(f'Match found: {first_player.username} vs {second_player.username}')
-            return Response({
-                'status': 'found',
-                'opponent': second_player.username if current_user == first_player else first_player.username,
-                'game_session_id': game_session.id
-            })
-        
-    # if not enough players in queue and current user is not in the first two
-    PlayerQueue.objects.create(player=current_user) # add current user to queue if not there
-    logger.info(f'Added to queue: {current_user.username}')
-    return Response({'status': 'waiting'})
-
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def change_password(request):

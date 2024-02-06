@@ -29,24 +29,11 @@ class LoginSerializer(serializers.Serializer):
         if not user:
             raise AuthenticationFailed('Invalid credentials - User not found!')
         return user
-
-class GameSessionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = GameSession
-        fields = ['id', 'player1', 'player2', 'game_data', 'start_time', 'end_time', 'status']
-
-    player1 = serializers.PrimaryKeyRelatedField(queryset=Player.objects.all())
-    player2 = serializers.PrimaryKeyRelatedField(queryset=Player.objects.all())
-    game_data = serializers.JSONField()
-    start_time = serializers.DateTimeField(read_only=True)
-    end_time = serializers.DateTimeField(read_only=True)
-    status = serializers.ChoiceField(choices=GameSession.STATUS_CHOICES, default='ongoing', read_only=True)
     
 class UserSerializer(serializers.ModelSerializer):
     isbuddy = serializers.SerializerMethodField()
     is_two_factor_enabled = serializers.BooleanField(read_only=True)
-    game_sessions = GameSessionSerializer(many=True, read_only=True, source='game_sessions_as_player1')
-
+    
     class Meta:
         model = ModelUser
         fields = ('id', 'email', 'username', 'games_played', 'games_won', 'games_lost', 'games_tied', 'date_joined', 'custom_title', 'profile_avatar', 'isbuddy', 'is_two_factor_enabled', 'game_sessions')
@@ -90,22 +77,5 @@ class TwoFactorSetupSerializer(serializers.Serializer):
         instance.is_two_factor_enabled = validated_data.get('enable_2fa', instance.is_two_factor_enabled)
         if validated_data.get('enable_2fa') and not instance.totp_secret:
             instance.totp_secret = pyotp.random_base32()
-        instance.save()
-        return instance
-
-class PlayerQueueSerializer(serializers.ModelSerializer):
-    player = serializers.SlugRelatedField(slug_field='username', queryset=Player.objects.all())
-
-    class Meta:
-        model = PlayerQueue
-        fields = ['id', 'player', 'timestamp']
-    
-    def create(self, validated_data):
-        # Custon logic if needed
-        return PlayerQueue.objects.create(**validated_data)
-
-    def update(self, instance, validated_data):
-        # Custom logic if needed
-        instance.player = validated_data.get('player', instance.player)
         instance.save()
         return instance
