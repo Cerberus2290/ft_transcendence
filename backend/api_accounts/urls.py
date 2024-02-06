@@ -2,7 +2,6 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from . import views
-from .views import GameSessionViewSet
 
 urlpatterns = [
     path('register/', views.UserRegistration.as_view(), name='register'),

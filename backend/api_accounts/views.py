@@ -18,8 +18,8 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 
-from .models import Player, ExpiredTokens, Notification, GameSession, PlayerQueue
-from .serializers import UserSerializer, RegisterSerializer, LoginSerializer, AvatarUpdateSerializer, NotificationSerializer, DeleteAccountSerializer, TwoFactorSetupSerializer, GameSessionSerializer
+from .models import Player, ExpiredTokens, Notification
+from .serializers import UserSerializer, RegisterSerializer, LoginSerializer, AvatarUpdateSerializer, NotificationSerializer, DeleteAccountSerializer, TwoFactorSetupSerializer
 from .validations import custom_validation, email_validation, password_validation, username_validation
 from .authentication import ExpiredTokensJWTAuthentication
 
