@@ -122,6 +122,8 @@ class UserView(viewsets.ModelViewSet):
         serializer = UserSerializer(queryset, many=True, context={'request': request})
         return Response(serializer.data)
 
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
 def join_matchmaking(request):
     user = request.user
 

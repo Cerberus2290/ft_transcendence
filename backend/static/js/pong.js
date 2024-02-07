@@ -348,7 +348,7 @@ function startMatchmaking() {
         return;
     }
     function pollMatchmaking() {
-        fetch(`https://${host}/api/find-match/`, {
+        fetch(`https://${host}/api/join-matchmaking/`, {
             method: 'GET',
             headers: {
                 'Authorization': 'Bearer ' + accessToken,

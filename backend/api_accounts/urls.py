@@ -20,4 +20,5 @@ urlpatterns = [
     path('verify-2fa/', views.VerifyTwoFactorAPIView.as_view(), name='verify_2fa'),
     path('update-stats/', views.update_stats, name='update_stats'),
     path('change-password/', views.change_password, name='change_password'),
+    path('join-matchmaking/', views.join_matchmaking, name='join_matchmaking'),
 ]
