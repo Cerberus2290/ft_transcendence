@@ -70,6 +70,10 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
 ]
 
+SESSION_COOKIE_SECURE = True
+
+CSRF_COOKIE_SECURE = True
+
 USE_I18N = True
 
 LANGUAGES = [
@@ -120,7 +124,7 @@ else:
          "https://10.12.14.3",
      ]
 
-CSRF_TRUSTED_ORIGINS = ['https://10.12.14.3']
+CSRF_TRUSTED_ORIGINS = ['https://10.12.14.3', 'https://172.20.248.62']
 
 CORS_ALLOW_HEADERS = [
     'Authorization',
@@ -228,12 +232,12 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 if DEBUG == True:
-    STATICFILES_DIRS = [BASE_DIR / 'static',]
+    STATIC_ROOT = [BASE_DIR / 'static',]
 else:
     STATIC_ROOT = BASE_DIR / 'static'
 
 MEDIA_URL = '/avatars/'
-MEDIA_ROOT = BASE_DIR / ''
+MEDIA_ROOT = BASE_DIR / 'avatars'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

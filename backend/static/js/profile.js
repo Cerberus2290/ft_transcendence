@@ -1,4 +1,5 @@
-import appState, { notifyListeners } from "./appstate.js";
+import appState from "./appstate.js";
+import { notifyListeners, getCurrentLanguage, translations } from "./appstate.js";
 
 function translate(key) {
     var currentLanguage = getCurrentLanguage();
@@ -9,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const accessToken = localStorage.getItem('access');
 
     if (!accessToken) {
-        console.log(translate('No access token found. You are not logged in!'));
+        console.log('No access token found. You are not logged in!');
         return;
     }
 
@@ -44,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function fetchMatchHistory() {
     const accessToken = localStorage.getItem('access');
     if (!accessToken) {
-        console.log(translate('No access token found. You are not logged in!'));
+        console.log('No access token found. You are not logged in!');
         return;
     }
 
@@ -185,6 +186,7 @@ function markNotificationsAsRead(notificationId) {
 
 function displayUserProfile(data) {
     if (data.profile_avatar) {
+        console.log('Profile avatar:', data.profile_avatar);
         const profileAvatar = document.getElementById('profileAvatar');
         profileAvatar.src = data.profile_avatar;
         profileAvatar.style.display = 'block';
