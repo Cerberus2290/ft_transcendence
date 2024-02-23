@@ -1,195 +1,98 @@
-const canvas = document.getElementById("hangmanCanvas");
-const ctx = canvas.getContext("2d");
-let gameShouldStart = false;
-let gameStarted = false;
+const wordDisplay = document.querySelector(".word-display");
+const guessesText = document.querySelector(".guesses-text b");
+const keyboardDiv = document.querySelector(".keyboard");
+const hangmanImage = document.querySelector(".hangman-box img");
+const gameModal = document.querySelector(".game-modal");
+const playAgainBtn = gameModal.querySelector("button");
 
-// Game constants
-const maxAttempts = 6;
-const wordList = ['apple', 'banana', 'orange', 'strawberry', 'watermelon'];
-let currentWord;
-let guessedLetters = [];
-let incorrectAttempts = 0;
 
-//Game event
-document.getElementById('playHangman').addEventListener('click', function() {
-    mode = 'local';
-    const enteredName = document.getElementById('player2NameInput').value;
-    playerTwoName = enteredName.trim() || 'Player2';
+// Initializing game variables
+let currentWord, correctLetters, wrongGuessCount;
+const maxGuesses = 6;
+let players = [{ name: 'Player 1', score: 0 }, { name: 'Player 2', score: 0 }];
+let currentPlayerIndex = 0;
+let isMultiplayer = false;
 
+
+const soloGameButton = document.getElementById('solo-game-button');
+const multiplayerGameButton = document.getElementById('multiplayer-game-button');
+const gameWindow = document.querySelector('.container');
+
+
+soloGameButton.addEventListener('click', () => {
+        isMultiplayer = false;
+        gameWindow.style.display = 'flex';
+        initGame();
+});
+
+multiplayerGameButton.addEventListener('click', () => {
+        isMultiplayer = true;
+        gameWindow.style.display = 'flex';
+        initGame();
+});
+
+
+const resetGame = () => {
+    correctLetters = [];
+    wrongGuessCount = 0;
+    hangmanImage.src = "backend/static/img/hangman-0.svg";
+    guessesText.innerText = `${wrongGuessCount} / ${maxGuesses}`;
+    wordDisplay.innerHTML = currentWord.split("").map(() => `<li class="letter"></li>`).join("");
+    keyboardDiv.querySelectorAll("button").forEach(btn => btn.disabled = false);
+    gameModal.classList.remove("show");
+}
+
+const getRandomWord = () => {
+    // Selecting a random word and hint from the wordList
+    const { word, hint } = wordList[Math.floor(Math.random() * wordList.length)];
+    currentWord = word; // Making currentWord as random word
+    document.querySelector(".hint-text b").innerText = hint;
     resetGame();
-    document.getElementById('hangmanCanvas').style.display = 'block';
-});
-
-// Objects
-const gallows = [
-    () => drawGallowsBase(),
-    () => drawGallowsPole(),
-    () => drawGallowsBeam(),
-    () => drawGallowsRope(),
-    () => drawGallowsHead(),
-    () => drawGallowsBody(),
-    () => drawGallowsLeftArm(),
-    () => drawGallowsRightArm(),
-    () => drawGallowsLeftLeg(),
-    () => drawGallowsRightLeg()
-];
-
-// Function to choose a random word from the word list
-function getRandomWord() {
-    return wordList[Math.floor(Math.random() * wordList.length)];
 }
 
-// Function to start the game
-function startGame() {
-    currentWord = getRandomWord();
-    guessedLetters = [];
-    incorrectAttempts = 0;
-    gameStarted = true;
+const gameOver = (isVictory) => {
+    // After game complete.. showing modal with relevant details
+    const modalText = isVictory ? `You found the word:` : 'The correct word was:';
+    gameModal.querySelector("img").src = `backend/static/img/${isVictory ? 'victory' : 'lost'}.gif`;
+    gameModal.querySelector("h4").innerText = isVictory ? 'Congrats!' : 'Game Over!';
+    gameModal.querySelector("p").innerHTML = `${modalText} <b>${currentWord}</b>`;
+    gameModal.classList.add("show");
 }
 
-// Draw functions for the gallows
-function drawGallowsBase() {
-    ctx.moveTo(20, canvas.height - 20);
-    ctx.lineTo(canvas.width - 20, canvas.height - 20);
-    ctx.stroke();
-}
-
-function drawGallowsPole() {
-    ctx.moveTo(canvas.width / 2, canvas.height - 20);
-    ctx.lineTo(canvas.width / 2, 20);
-    ctx.stroke();
-}
-
-function drawGallowsBeam() {
-    ctx.moveTo(canvas.width / 2, 20);
-    ctx.lineTo(canvas.width / 4, 20);
-    ctx.stroke();
-}
-
-function drawGallowsRope() {
-    ctx.moveTo(canvas.width / 4, 20);
-    ctx.lineTo(canvas.width / 4, 50);
-    ctx.stroke();
-}
-
-function drawGallowsHead() {
-    ctx.beginPath();
-    ctx.arc(canvas.width / 4, 70, 20, 0, Math.PI * 2);
-    ctx.stroke();
-}
-
-function drawGallowsBody() {
-    ctx.moveTo(canvas.width / 4, 90);
-    ctx.lineTo(canvas.width / 4, 150);
-    ctx.stroke();
-}
-
-function drawGallowsLeftArm() {
-    ctx.moveTo(canvas.width / 4, 100);
-    ctx.lineTo(canvas.width / 4 - 20, 130);
-    ctx.stroke();
-}
-
-function drawGallowsRightArm() {
-    ctx.moveTo(canvas.width / 4, 100);
-    ctx.lineTo(canvas.width / 4 + 20, 130);
-    ctx.stroke();
-}
-
-function drawGallowsLeftLeg() {
-    ctx.moveTo(canvas.width / 4, 150);
-    ctx.lineTo(canvas.width / 4 - 20, 180);
-    ctx.stroke();
-}
-
-function drawGallowsRightLeg() {
-    ctx.moveTo(canvas.width / 4, 150);
-    ctx.lineTo(canvas.width / 4 + 20, 180);
-    ctx.stroke();
-}
-
-// Draw function for displaying the word
-function drawWord() {
-    let displayedWord = '';
-    for (const letter of currentWord) {
-        if (guessedLetters.includes(letter)) {
-            displayedWord += letter;
-        } else {
-            displayedWord += '_';
-        }
-        displayedWord += ' ';
-    }
-    ctx.font = '24px Arial';
-    ctx.fillText(displayedWord, canvas.width / 2 - 50, canvas.height - 50);
-}
-
-// Function to handle keyboard input for guessing letters
-function guessLetter(letter) {
-    if (!gameStarted) return;
-    if (!guessedLetters.includes(letter)) {
-        guessedLetters.push(letter);
-        if (!currentWord.includes(letter)) {
-            incorrectAttempts++;
-        }
-    }
-    checkGameStatus();
-}
-
-// Function to check if the game is won or lost
-function checkGameStatus() {
-    if (incorrectAttempts >= maxAttempts) {
-        endGame(false);
-    } else if (currentWord.split('').every(letter => guessedLetters.includes(letter))) {
-        endGame(true);
-    }
-}
-
-// Function to end the game and display the result
-function endGame(win) {
-    gameStarted = false;
-    if (win) {
-        alert('Congratulations! You guessed the word correctly.');
+const initGame = (button, clickedLetter) => {
+    const playerNameDiv = document.getElementById('player-name');
+    playerNameDiv.innerText = players[currentPlayerIndex].name;
+    soloGameButton.style.display = 'none';
+    multiplayerGameButton.style.display = 'none';
+    if(currentWord.includes(clickedLetter)) {
+        // Showing all correct letters on the word display
+        [...currentWord].forEach((letter, index) => {
+            if(letter === clickedLetter) {
+                correctLetters.push(letter);
+                wordDisplay.querySelectorAll("li")[index].innerText = letter;
+                wordDisplay.querySelectorAll("li")[index].classList.add("guessed");
+            }
+        });
     } else {
-        alert('Sorry, you lost. The word was: ' + currentWord);
+        // If clicked letter doesn't exist then update the wrongGuessCount and hangman image
+        wrongGuessCount++;
+        hangmanImage.src = `backend/static/img/hangman-${wrongGuessCount}.svg`;
     }
+    button.disabled = true; // Disabling the clicked button so user can't click again
+    guessesText.innerText = `${wrongGuessCount} / ${maxGuesses}`;
+
+    // Calling gameOver function if any of these condition meets
+    if(wrongGuessCount === maxGuesses) return gameOver(false);
+    if(correctLetters.length === currentWord.length) return gameOver(true);
 }
 
-// Function to clear the canvas
-function clearCanvas() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+// Creating keyboard buttons and adding event listeners
+for (let i = 97; i <= 122; i++) {
+    const button = document.createElement("button");
+    button.innerText = String.fromCharCode(i);
+    keyboardDiv.appendChild(button);
+    button.addEventListener("click", (e) => initGame(e.target, String.fromCharCode(i)));
 }
 
-// Main game loop
-function gameLoop() {
-    clearCanvas();
-    if (gameShouldStart) {
-        drawGallows();
-        drawWord();
-    } else {
-        ctx.font = '24px Arial';
-        ctx.fillText('Press ENTER to start the game', canvas.width / 2 - 150, canvas.height / 2);
-    }
-    requestAnimationFrame(gameLoop);
-}
-
-// Event listener for keyboard input
-document.addEventListener('keydown', function(event) {
-    if (event.keyCode >= 65 && event.keyCode <= 90) {
-        guessLetter(event.key.toLowerCase());
-    } else if (event.keyCode === 13) {
-        if (!gameStarted) {
-            gameShouldStart = true;
-            startGame();
-        }
-    }
-});
-
-// Function to draw the gallows based on the number of incorrect attempts
-function drawGallows() {
-    for (let i = 0; i < incorrectAttempts; i++) {
-        gallows[i]();
-    }
-}
-
-// Start the game loop
-gameLoop();
+getRandomWord();
+playAgainBtn.addEventListener("click", getRandomWord);

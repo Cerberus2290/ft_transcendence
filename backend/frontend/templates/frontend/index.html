@@ -1,11 +1,11 @@
 {% load static %}
 {% load i18n %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8"> 
     <meta name="viewport" content= "width=device-width, initial-scale=1.0"> 
-    <title>TRASCENDENCE PONG GAME</title>
+    <title>TRANSCENDENCE PONG GAME</title>
     <style>
         canvas {
             background: #000;
@@ -18,6 +18,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"rel="stylesheet">
+    <link rel="stylesheet" href="../../../static/css/hangman.css">
+    <script src="../../../static/js/word-list.js" defer></script>
+    <script src="../../../static/js/hangman.js" defer></script>
 </head>
 <body>
     <script type="text/javascript">
@@ -104,6 +107,34 @@
     <div class="non-game-element" style="display: flex;">
         <button id="login42Button">{% trans "Login with 42 credentials" %}</button>
     </div>
+
+{#    I added this code here #}
+    <div class="game-mode-selection" style="text-align: center; margin-top: 20px;">
+        <button id="solo-game-button">Solo Game</button>
+        <button id="multiplayer-game-button">Multiplayer Game</button>
+    </div>
+    <div class="game-modal">
+        <div class="content">
+            <img src="#" alt="gif">
+            <h4>Game Over!</h4>
+            <p>The correct word was: <b>rainbow</b></p>
+            <button class="play-again">Play Again</button>
+        </div>
+    </div>
+    <div id="game" class="container">
+        <div id="player-name"></div>
+        <div class="hangman-box">
+            <img src="#" draggable="false" alt="hangman-img">
+            <h1>Hangman Game</h1>
+        </div>
+        <div class="game-box">
+            <ul class="word-display"></ul>
+            <h4 class="hint-text">Hint: <b></b></h4>
+            <h4 class="guesses-text">Incorrect guesses: <b></b></h4>
+            <div class="keyboard"></div>
+        </div>
+    </div>
+{#    This part was added to the code#}
 
     <div id="playPongDiv" style="display: none; text-align: center;">
         <input type="text" id="player2NameInput" placeholder="Enter Player 2's name"></input><br>
