@@ -1,4 +1,4 @@
-import * as THREE from '../threejs/node_modules/three/build';
+import * as THREE from 'three';
 import { getCurrentLanguage, translations } from "./appstate.js";
 
 document.addEventListener('DOMContentLoaded', function() {
