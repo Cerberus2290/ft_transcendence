@@ -13,6 +13,14 @@
             margin: auto;
         }
     </style>
+    <script type="importmap">
+        {
+          "imports": {
+            "three": "https://unpkg.com/three@v0.161.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@v0.161.0/examples/jsm/"
+          }
+        }
+    </script>
     <link rel="stylesheet" href="{% static 'css/pong.css' %}">
     <link rel="stylesheet" href="{% static 'css/termsOfUse.css' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -104,7 +112,7 @@
         <button id="login42Button">{% trans "Login with 42 credentials" %}</button>
     </div>
 
-    <div id="playPongDiv" style="display: none; text-align: center;">
+    <div id="playPongDiv" style="text-align: center;">
         <input type="text" id="player2NameInput" placeholder="Enter Player 2's name"></input><br>
         <button id="playPongButtonLocal">{% trans "PLAY PONG LOCALLY" %}</button>
             <button id="changeBackgroundColour">{% trans "CHANGE BACKGROUND" %}</button>
@@ -122,7 +130,12 @@
             </div>
             <div id="tournamentMatchContainer"></div>
         </button>
-        <canvas id="pongCanvas" width="800" height="600" style="display: none;"></canvas>
+        <div id="canvas-container">
+            <canvas id="pongCanvas" width="800" height="600" style="display: none;"></canvas>
+            <canvas id="pauseScreen" width="800" height="600"></canvas>
+            <p id="centered-text"></p>
+            <p id="score"></p>
+        </div>
     </div>
     {% block login %}
     <script type='module' src="{% static 'js/login.js' %}"></script>
