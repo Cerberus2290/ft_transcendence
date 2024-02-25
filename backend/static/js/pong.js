@@ -1,5 +1,4 @@
-import * as THREE from 'three';
-
+import * as THREE from '../threejs/node_modules/three/build';
 import { getCurrentLanguage, translations } from "./appstate.js";
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -274,26 +273,6 @@ function animate() {
 }
 
 animate();
-
-function checkWinner() {
-    let winnerName, loserName, score;
-    if (leftPaddle.score == 5 || rightPaddle.score == 5) {
-        if (leftPaddle.score == 5) {
-            winnerName = window.playerOne || 'Player1';
-            loserName = playerTwoName || 'Player2';
-        } else {
-            winnerName = playerTwoName || 'Player2';
-            loserName = window.playerOne || 'Player1';
-        }
-        score = `${leftPaddle.score} - ${rightPaddle.score}`;
-        alert(`${winnerName} wins!`);
-        // updateStats(winnerName, loserName);
-        // submitMatchHistory(winnerName, loserName, score);
-        resetGame();
-        resetGameFlags();
-    }
-}
-
 
 function removePowerup(){
     scene.remove(powerup.object);
