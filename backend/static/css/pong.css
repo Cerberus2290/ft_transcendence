@@ -361,7 +361,6 @@ select:focus {
 	bottom: -30px; /* Position the button below the avatar */
 	/*left: 50%;*/
 	/*transform: translateX(-50%);*/
-	background-color: #6f42c1; /* Dark purple background color */
 	color: #fff;
 	padding: 10px 20px;
 	border-radius: 5px;
@@ -369,7 +368,7 @@ select:focus {
 }
 
 input[type="file"] {
-	display: none;
+	display: inline-block;
 }
 
 .buttons {
@@ -479,10 +478,14 @@ input[type="file"] {
 	background-color: darkslateblue;
 }
 
-
 #pongBtnNav, #hangmanBtnNav, #settingsBtnNav, #tournamentBtnNav{
 	display: none;
 }
+
+#twoFactorSetupContainer canvas{
+   margin:0;
+}
+
 
 /*end of profile styles*/
 
@@ -626,9 +629,9 @@ input[type="file"] {
 
 .tournamentInfo {
 	display: block;
-	width: 30%;
+	width: 100%;
 	height: auto;
-	background-color: rgba(72, 61, 139, 0.5);
+	background-color: darkslateblue;
 	padding: 20px;
 	margin: 10px auto;
 	font-size: 20px; /* Adjust the font size to make the arrow thicker */
@@ -639,8 +642,8 @@ input[type="file"] {
 	z-index: 115;
 
 	position: absolute;
-	top: 10%;
-	left: 65%;
+	top: 60%;
+	left: -90%;
 }
 /*end of tournament*/
 
@@ -704,6 +707,10 @@ input[type="file"] {
 
 @media (min-width: 1025px) and (max-width: 1200px) {
 
+    #twoFactorSetupContainer input {
+        font-size: small;
+    }
+
     canvas{
         margin: -40% 30%;
     }
@@ -735,6 +742,22 @@ input[type="file"] {
 
 @media (min-width: 769px) and (max-width: 1024px) {
 
+    #pongMenu ul li input {
+        font-size: x-small;
+    }
+
+    #twoFactorSetupContainer input {
+        font-size: small;
+    }
+
+    #tournamentMatchContainer input {
+        font-size: small;
+    }
+
+    #tournamentControls input{
+        font-size: small;
+    }
+
     canvas {
         margin: -40% 20%;
     }
@@ -746,6 +769,10 @@ input[type="file"] {
 		border-radius: 5px; /* Rounded corners */
 		margin-top: 10px;
 		font-size: 18px;
+	}
+
+	#twoFactorSetupContainer p {
+	    font-size: 14px;
 	}
 
 	.navbar {
@@ -942,5 +969,13 @@ input[type="file"] {
 
     .avatar-section {
         margin-left: 10px;
+    }
+
+    #twoFactorSetupContainer input {
+        font-size: small;
+    }
+
+    #tournamentControls input{
+        font-size: small;
     }
 }
