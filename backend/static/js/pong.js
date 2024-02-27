@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import { getCurrentLanguage, translations } from "./appstate.js";
 
+const BALLSPEED = 0.3;
+const BALLSPEEDMAX = 0.6;
+const PADDLESPEED = 0.2;
+
 document.addEventListener('DOMContentLoaded', function() {
     const startTournamentMatchInput = document.createElement('input');
     startTournamentMatchInput.type = 'text';
@@ -23,7 +27,6 @@ function translate(key) {
     return translations[key][currentLanguage];
 }
 
-const BALLSPEED = 0.3;
 var fieldWidth = 50;
 var fieldDepth = 1;
 var fieldHeight = fieldWidth / 2;
@@ -32,14 +35,15 @@ var fieldBottom = -(fieldHeight / 2);
 var fieldLeft = -(fieldWidth / 2);
 var fieldRight = fieldWidth / 2;
 var paddleWidth = fieldWidth / 70;
-var paddleHeight = fieldHeight / 3;
+var paddleHeight = fieldHeight / 3.5;
 var gameShouldStart = true;
 var gameStarted = false;
 var darkBackground = true;
 var scoreText = document.getElementById("score");
 var darkColour = 0x111111;
 var lightColour = 0xeeeeee;
-
+var modeSelected = false;
+var powerupSpeed = 1;
 let enablePowerups = false;
 
 // AI mode
@@ -57,7 +61,7 @@ ctx.fillStyle = "white";
 ctx.textAlign = "center";
 ctx.textBaseline = "middle";
 ctx.font = "30px Arial"
-ctx.fillText("select a mode to play", pauseScreen.width / 2, pauseScreen.height / 2);
+ctx.fillText("press ENTER to play", pauseScreen.width / 2, pauseScreen.height / 2);
 
 let playerTwoName = 'Player2';
 
@@ -66,10 +70,11 @@ let wKeyPressed = false, sKeyPressed = false;
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
-scene.background = new THREE.Color(0x262626);
+scene.background = new THREE.Color(0x010101);
 
 const renderer = new THREE.WebGLRenderer({
-    canvas: document.querySelector('canvas')
+    canvas: document.querySelector('canvas'),
+    antialias: true
 });
 renderer.setSize( window.innerWidth, window.innerHeight );
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -78,13 +83,13 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild( renderer.domElement );
 
 // camera
-camera.rotation.x = 1.41;
-camera.rotation.y = 0.54;
-camera.rotation.z = 0;
+camera.rotation.x = 0.62;
+camera.rotation.y = 0.28;
+camera.rotation.z = 0.35;
 
-camera.position.x = 14.09;
-camera.position.y = -40;
-camera.position.z = 20;
+camera.position.x = 13;
+camera.position.y = -15;
+camera.position.z = 15.5;
 
 var originalCameraPosition = new THREE.Vector3(14.09, -40, 20);
 var originalCameraRotation = new THREE.Euler(1.41, 0.54, 0, 'XYZ'); 
@@ -99,7 +104,7 @@ var angle = -Math.PI / 2;
 
 // create field
 var fieldGeometry = new THREE.BoxGeometry(fieldWidth, fieldHeight, fieldDepth, 1, 1, 1);
-var fieldMaterial = new THREE.MeshLambertMaterial({ color: darkColour, side: THREE.BackSide });
+var fieldMaterial = new THREE.MeshPhongMaterial({ color: darkColour, side: THREE.BackSide, shininess: 30});
 var field = new THREE.Mesh(fieldGeometry, fieldMaterial);
 field.position.set(0, 0, 0);
 field.receiveShadow = true;
@@ -149,8 +154,8 @@ class Ball {
     reset(){
         this.object.position.x = 0;
         this.object.position.y = 0;
-        this.dx = getRandomNumberBetween(0.2, 0.6);
-        this.dy = getRandomNumberBetween(0.2, 0.6);
+        this.dx = getRandomNumberBetween(0.4, 0.6);
+        this.dy = getRandomNumberBetween(0.4, 0.6);
         this.normalizeDirection();
     }
 };
@@ -161,8 +166,9 @@ class enlargePaddle extends Ball {
         this.scale = 0.2;
     }
     power(paddle){
-        console.log("power");
-        paddle.object.scale.y += this.scale;
+        if (paddle.speed < 1.2) paddle.speed *= 1.05;
+        paddle.speed = 1.50;
+        paddle.material.color.set(0xf26262);
         removePowerup();
     }
 };
@@ -181,23 +187,43 @@ class speedUpBall extends Ball {
 var powerup = new Ball("#bbbbbb");
 
 var ball = new Ball("#eeeeee");
+ball.object.castShadow = true;
+ball.object.receiveShadow = true;
 scene.add(ball.object);
 
 // create paddle
 var leftPaddle = new paddle();
 var rightPaddle = new paddle();
-leftPaddle.object.position.x = -(fieldWidth / 2);
-rightPaddle.object.position.x = fieldWidth / 2;
+leftPaddle.object.position.x = -(fieldWidth / 2) + leftPaddle.width;
+rightPaddle.object.position.x = fieldWidth / 2 - leftPaddle.width;
 leftPaddle.object.receiveShadow = true;
 rightPaddle.object.receiveShadow = true;
 rightPaddle.object.position.z += fieldDepth;
 leftPaddle.object.position.z += fieldDepth;
-rightPaddle.castShadow = true;
-leftPaddle.castShadow = true;
-rightPaddle.receiveShadow = true;
-leftPaddle.receiveShadow = true;
+rightPaddle.object.castShadow = true;
+leftPaddle.object.castShadow = true;
+rightPaddle.object.receiveShadow = true;
+leftPaddle.object.receiveShadow = true;
 scene.add(leftPaddle.object);
 scene.add(rightPaddle.object);
+
+var dottedLineGeometry = new THREE.BufferGeometry();
+var positions = new Float32Array([
+    0, -(fieldHeight / 2) + 1, 0,  
+    0, fieldHeight / 2 - 1, 0    
+]);
+dottedLineGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3)); 
+
+var dottedLineMaterial = new THREE.LineDashedMaterial({
+    color: 0xFFD1DC,
+    dashSize: 0.5,
+    gapSize: 0.5, 
+    opacity: 0.5
+});
+
+var dottedLine = new THREE.Line(dottedLineGeometry, dottedLineMaterial);
+dottedLine.computeLineDistances();
+scene.add(dottedLine);
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 1)
 scene.add(ambientLight)
@@ -206,6 +232,14 @@ pointLight.position.x = 2
 pointLight.position.y = 3
 pointLight.position.z = 4
 scene.add(pointLight)
+
+var spotlight = new THREE.DirectionalLight(0xe069ff, 1);
+spotlight.intensity = 0.9;
+spotlight.position.x = -220;
+spotlight.position.y = 177;
+spotlight.position.z = 200;
+spotlight.castShadow = true;
+scene.add(spotlight);
 
 var light = new THREE.DirectionalLight(0xffffff, 1);
 light.position.set(0, -300, 200);
@@ -217,6 +251,12 @@ light.shadow.mapSize.height = 1024;
 light.shadow.camera.near = 0.5;
 light.shadow.camera.far = 500;
 light.intensity = 2;
+
+light.position.x = -21;
+light.position.y = -485;
+light.position.z = 199;
+light.intensity = 5;
+light.color.set(0xe069ff);
 scene.add(light);
 
 
@@ -255,10 +295,6 @@ var rotationEnabled = false;
 //     rotationEnabled = !rotationEnabled;
 // });
 
-var newX = center.x + radius * Math.cos(angle);
-var newY = center.y + radius * Math.sin(angle);
-camera.position.set(newX, newY, distance);
-camera.lookAt(center);
 
 function animate() {
     if (gameStarted){
@@ -281,13 +317,13 @@ function removePowerup(){
 
 function movePaddles() {
     if (wKeyPressed && leftPaddle.object.position.y < fieldTop - leftPaddle.height / 2) 
-        leftPaddle.object.position.y += 0.1;
+        leftPaddle.object.position.y += PADDLESPEED;
     if (sKeyPressed && (leftPaddle.object.position.y > fieldBottom + leftPaddle.height / 2)) 
-        leftPaddle.object.position.y -= 0.1;
+        leftPaddle.object.position.y -= PADDLESPEED;
     if (upArrowPressed && rightPaddle.object.position.y < fieldTop - leftPaddle.height / 2) 
-        rightPaddle.object.position.y += 0.1;
+        rightPaddle.object.position.y += PADDLESPEED;
     if (downArrowPressed  && (rightPaddle.object.position.y > fieldBottom + rightPaddle.height / 2)) 
-        rightPaddle.object.position.y -= 0.1;
+        rightPaddle.object.position.y -= PADDLESPEED;
 }
 
 function movePowerup() {
@@ -295,7 +331,6 @@ function movePowerup() {
     if (powerup.active == true){
         powerup.object.position.x += powerup.dx * powerup.speed;
         powerup.object.position.y += powerup.dy * powerup.speed;
-        console.log(powerup.dx);
         if (powerup.object.position.y + powerup.radius > fieldTop) powerup.dy = Math.abs(powerup.dy) * -1;
         else if (powerup.object.position.y - powerup.radius < fieldBottom) powerup.dy = Math.abs(powerup.dy);
         if (powerup.object.position.x < leftPaddle.object.position.x + leftPaddle.width && powerup.object.position.y > leftPaddle.object.position.y - leftPaddle.height / 2 && powerup.object.position.y < leftPaddle.object.position.y + leftPaddle.height / 2)
@@ -342,16 +377,30 @@ function moveBall() {
         else rightPaddle.score++;
         checkWinner();
         ball.reset();
+        paddlesReset();
     }
     // Reset ball if it goes out of bounds
-    ball.object.position.y += ball.dy * ball.speed;
-    ball.object.position.x += ball.dx * ball.speed;
-    console.log(ball.dx);
+    ball.object.position.y += (ball.dy * ball.speed) * powerupSpeed;
+    ball.object.position.x += (ball.dx * ball.speed) * powerupSpeed;
 }
 
 function paddleCollision(paddle) {
     if (Math.abs(ball.dx) < 0.5) ball.dx *= 1.10; ball.dy *= 1.10;
-    ball.speed = paddle.speed;
+    powerupSpeed = paddle.speed;
+}
+
+function paddlesReset()
+{
+    rightPaddle.speed = 1;
+    leftPaddle.speed = 1;
+    if (darkBackground = true){
+        rightPaddle.material.color.set(lightColour);
+        leftPaddle.material.color.set(lightColour);
+    }
+    else {
+        rightPaddle.material.color.set(darkColour);
+        leftPaddle.material.color.set(lightColour);
+    }
 }
 
 function drawScore() {
@@ -428,6 +477,7 @@ function aiPredictBallPosition() {
 
 // // Event listeners
 document.addEventListener("keydown", function(event) {
+    event.preventDefault();
     console.log(event.keyCode);
     switch (event.keyCode) {
         case 87: // W key
@@ -445,11 +495,12 @@ document.addEventListener("keydown", function(event) {
             event.preventDefault();
             break;
         case 13: // Enter key
-            if (!gameStarted) {
+            if (!gameStarted && modeSelected) {
                 gameStarted = true;
                 gameShouldStart = true;
                 ctx.beginPath();
                 ctx.clearRect(0, 0, pauseScreen.width, pauseScreen.height);
+                document.getElementById('pauseScreen').style.display = 'none';
                 setPongCanvas();
                 animate();
             }
@@ -493,14 +544,8 @@ document.getElementById('enablePowerups').addEventListener('click', function() {
 document.getElementById('changeBackgroundColour').addEventListener('click', function() {
     
     if (darkBackground == true)
-    {
-        field.material.color.setHex(lightColour);
-        rightPaddle.material.color.setHex(darkColour);
-        leftPaddle.material.color.setHex(darkColour);
-        ball.material.color.setHex(darkColour);
-    }
-    else
-    {
+        field.material.color.setHex(0x030626);
+    else {
         field.material.color.setHex(darkColour);
         rightPaddle.material.color.setHex(lightColour);
         leftPaddle.material.color.setHex(lightColour);
@@ -552,7 +597,6 @@ document.getElementById('joinTournamentButton').addEventListener('click', functi
     document.getElementById('tournamentIDInput').value = '';
 });
    
-
 function resetGame() {
     leftPaddle.score = 0;
     rightPaddle.score = 0;
@@ -562,6 +606,8 @@ function resetGame() {
 }
 
 function setPauseScreen() {
+    modeSelected = true;
+    document.getElementById('pauseScreen').style.display = 'block';
     ctx.clearRect(0, 0, pauseScreen.width, pauseScreen.height);
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, pauseScreen.width, pauseScreen.height);
