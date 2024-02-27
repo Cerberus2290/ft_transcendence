@@ -164,21 +164,42 @@ class OAuthCallback(APIView):
             titles = user_data.get('titles', [])
             if titles:
                 custom_title = titles[0].get('name', '').split()[0]
-            user, created = Player.objects.get_or_create(
-                username=username,
-                defaults={
-                    'email': email,
-                    'username': username,
-                    'custom_title': custom_title,
-                }
-            )
-            if created:
+            
+            # user, created = Player.objects.get_or_create(
+            #     email=email.strip(),
+            #     username=username,
+            #     defaults={
+            #         'email': email,
+            #         'username': username,
+            #         'custom_title': custom_title,
+            #     }
+            # )
+            # if created:
+            #     print("\t\t\tUser added successfully!")
+            #     response = requests.get(picture_url)
+            #     if response.status_code == 200:
+            #         user.profile_avatar.save(f"{username}_profile_avatar.jpg", ContentFile(response.content))
+            # else:
+            #     print("\t\t\tUser already exists!")
+            try:
+                user = Player.objects.get(email=email.strip())
+                user.username = username
+                user.custom_title = custom_title
+                user.save(update_fields=['username', 'custom_title'])
+                print("\t\t\tUser updated successfully!")
+            except Player.DoesNotExist:
+                user = Player.objects.create(
+                    email=email,
+                    username=username,
+                    custom_title=custom_title
+                )
                 print("\t\t\tUser added successfully!")
+            
+            if picture_url:
                 response = requests.get(picture_url)
                 if response.status_code == 200:
                     user.profile_avatar.save(f"{username}_profile_avatar.jpg", ContentFile(response.content))
-            else:
-                print("\t\t\tUser already exists!")                
+
             login(request, user)
 
             refresh = RefreshToken.for_user(user)
@@ -276,6 +297,21 @@ class EnableTwoFactorAPIView(APIView):
             totp_uri = pyotp.TOTP(user.totp_secret).provisioning_uri(user.email, issuer_name='PingPongTranscendence')
             return Response({'otp_uri': totp_uri}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class DisableTwoFactorAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        user.is_two_factor_enabled = False
+        user.save()
+        return Response({'message': '2FA disabled successfully!'}, status=status.HTTP_200_OK)
+    
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def TwoFactorCheck(request):
+    user = request.user
+    return Response({'is_two_factor_enabled': user.is_two_factor_enabled}, status=status.HTTP_200_OK)
     
 class VerifyTwoFactorAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -560,3 +596,17 @@ def setup_final_match(request, tournament_id):
         return Response({'error': 'Tournament not found!'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def match_making(request):
+    current_user = request.user
+
+    potential_opponents = Player.objects.exclude(id=current_user.id)
+
+    if not potential_opponents.exists():
+        return Response({'error': 'No potential opponents found!'}, status=status.HTTP_404_NOT_FOUND)
+
+    opponent = random.choice(potential_opponents)
+
+    return Response({'message': f'You have been matched with {opponent.username}!'}, status=status.HTTP_200_OK)
