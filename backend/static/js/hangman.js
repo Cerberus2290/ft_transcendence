@@ -143,14 +143,14 @@ const hangmanImage = document.querySelector(".hangman-box img");
 const gameModal = document.querySelector(".game-modal");
 const playAgainBtn = gameModal.querySelector("button");
 const playerNameDiv = document.getElementById('player-name');
-// const mainPlayer = window.playerOne;
+const mainPlayer = window.playerOne;
 
 // Initializing game variables
 let currentWord, correctLetters, wrongGuessCount;
 const maxGuesses = 6;
 let players = [
-    { name: 'Player 1', score: 0, isMyTurn: true, attempts: 0, wrongGuesses: 0 },
-    { name: 'Player 2', score: 0, isMyTurn: false, attempts: 0, wrongGuesses: 0 }
+    { name: mainPlayer, score: 0, isMyTurn: true, attempts: 0, wrongGuesses: 0 },
+    { name: playerNameDiv, score: 0, isMyTurn: false, attempts: 0, wrongGuesses: 0 }
 ];
 let currentPlayerIndex = 0;
 let isMultiplayer = false;
@@ -249,6 +249,7 @@ const initSoloGame = (button, clickedLetter) => {
 const initMultiPlayerGame = (button, clickedLetter) => {
     // Get the current player
     const currentPlayer = players[currentPlayerIndex];
+    //const currentPlayer = window.playerOne;
 
     // Hide the game selection buttons
     soloGameButton.style.display = 'none';
@@ -299,6 +300,27 @@ const initMultiPlayerGame = (button, clickedLetter) => {
     }
 };
 
+function selectOpponent() {
+    fetch(`https://${host}/api/match-making/`), {
+        method: 'POST',
+        headers: {
+            'Authrization': 'Bearer ' + localStorage.getItem('access'),
+            'Content-Type': 'application/json'
+        },
+    }
+    .then(response => {
+        if(!response.ok) {
+            throw new Error(translate('Error enabling 2FA'));
+        }
+        return response.json();
+    })
+    .then(data => {
+
+    })
+    .catch((error) => {
+        console.log('Error selectOpponent:', error);
+    });
+}
 
 const switchPlayer = () => {
      currentPlayerIndex = (++currentPlayerIndex) % players.length;

@@ -14,12 +14,12 @@
         }
     </style>
     <script type="importmap">
-        {
-          "imports": {
-            "three": "https://unpkg.com/three@v0.161.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@v0.161.0/examples/jsm/"
-          }
-        }
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@v0.161.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@v0.161.0/examples/jsm/"
+      }
+    }
     </script>
     <link rel="stylesheet" href="{% static 'css/pong.css' %}">
     <link rel="stylesheet" href="{% static 'css/hangman.css' %}">
@@ -252,7 +252,7 @@
     {% endblock %}
 
     {% block pong %}
-    <script type='module' src="{% static 'js/pong.js' %}"></script>
+    <script type='module' src="{% static 'js/oldpong.js' %}"></script>
     {% endblock %}
 <!--pong buttons-->
 <div id="pongMenu" class="pong_menu">
