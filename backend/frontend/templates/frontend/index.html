@@ -3,10 +3,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content= "width=device-width, initial-scale=1.0">
-    <title>TRANSCENDENCE PONG GAME</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8"> 
+    <meta name="viewport" content= "width=device-width, initial-scale=1.0"> 
+    <title>TRASCENDENCE PONG GAME</title>
+    <style>
+        canvas {
+            background: #000;
+            display: block;
+            margin: auto;
+        }
+    </style>
+    <script type="importmap">
+        {
+          "imports": {
+            "three": "https://unpkg.com/three@v0.161.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@v0.161.0/examples/jsm/"
+          }
+        }
+    </script>
     <link rel="stylesheet" href="{% static 'css/pong.css' %}">
     <link rel="stylesheet" href="{% static 'css/hangman.css' %}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
