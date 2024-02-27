@@ -22,7 +22,7 @@ function translate(key) {
     return translations[key][currentLanguage];
 }
 
-const canvas = document.getElementById("pongCanvas");
+const canvas = document.getElementById("oldPongCanvas");
 const ctx = canvas.getContext("2d");
 let mode = 'local';
 let colour = "white"
@@ -203,6 +203,7 @@ function drawScore() {
 }
 
 function drawInstructions() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.font = "20px 'Press Start 2P'";
     ctx.fillStyle = "white";
     ctx.fillText("Press ENTER to start", canvas.width / 2 - 120, canvas.height / 2);
@@ -274,17 +275,14 @@ function aiPredictBallPosition() {
 
 // Game loop
 function gameLoop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (!gameStarted) drawInstructions();
-    else {
-        if (canvas.style.display !== 'none') {
-            movePaddles();
-            if (mode === 'AI') moveAIPaddle();
-            moveBall();
-            movePowerup();
-            draw();
-        }
-    }
+    else if (gameStarted && mode === 'AI'){
+        movePaddles();
+        moveAIPaddle();
+        moveBall();
+        movePowerup();
+        draw();
+    }    
     requestAnimationFrame(gameLoop);
 }
 
@@ -304,6 +302,7 @@ function drawPowerup() {
 }
 
 function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawPaddle(leftPaddle.x, leftPaddle.y, leftPaddle.width, leftPaddle.height);
     drawPaddle(rightPaddle.x, rightPaddle.y, rightPaddle.width, rightPaddle.height);
     drawBall(ball.x, ball.y, ball.radius, colour);
@@ -314,6 +313,7 @@ function draw() {
 
 // Event listeners
 document.addEventListener("keydown", function(event) {
+    event.preventDefault();
     switch (event.keyCode) {
         case 87: // W key
             wKeyPressed = gameShouldStart && true;
@@ -330,9 +330,10 @@ document.addEventListener("keydown", function(event) {
             event.preventDefault();
             break;
         case 13: // Enter key
-            if (!gameStarted) {
+            if (!gameStarted && mode === 'AI') {
+                resetGame();
                 gameStarted = true;
-                gameShouldStart = true;
+                //document.getElementById('oldPongCanvas').style.display = 'none';
             }
             break;
     }
@@ -381,108 +382,16 @@ document.getElementById('changeBackgroundColour').addEventListener('click', func
     }
 });
 
-document.getElementById('playPongButtonLocal').addEventListener('click', function() {
-    mode = 'local';
-    const enteredName = document.getElementById('player2NameInput').value;
-    playerTwoName = enteredName.trim() || 'Player2';
-    
-    resetGame();
-    document.getElementById('pongCanvas').style.display = 'block';
-});
-
 // AI mode button
 document.getElementById('playPongButtonAI').addEventListener('click', function() {
     mode = 'AI';
     aiMode = true;
+    document.getElementById('oldPongCanvas').style.display = 'block';
+    document.getElementById('pauseScreen').style.display = 'none';
+    document.getElementById('pongCanvas').style.display = 'none';
     resetGame();
-    document.getElementById('pongCanvas').style.display = 'block';
+    setoldPongCanvas();
 });
-
-document.getElementById('playPongButtonTournament').addEventListener('click', function() {
-    const tournamentControls = document.getElementById('tournamentControls');
-
-    // toggle the display of the tournament controls
-    if (tournamentControls.style.display === 'none') {
-        tournamentControls.style.display = 'block';
-    } else {
-        tournamentControls.style.display = 'none';
-    }
-});
-
-document.getElementById('createTournamentButton').addEventListener('click', function() {
-    const tournamentName = document.getElementById('tournamentNameInput').value.trim();
-    startTournament(tournamentName);
-    document.getElementById('tournamentNameInput').value = '';
-});
-
-document.getElementById('joinTournamentButton').addEventListener('click', function() {
-    const tournamentId = document.getElementById('tournamentIDInput').value.trim();
-    if (tournamentId) {
-        joinTournament(tournamentId);
-    } else {
-        alert('Please enter a valid tournament ID');
-    }
-    document.getElementById('tournamentIDInput').value = '';
-});
-   
-function startTournament(tournamentName) {
-    const accessToken = localStorage.getItem('access');
-    if (!accessToken) {
-        console.log(translate('No access token found'));
-        return;
-    }
-
-    const data = {
-        name: tournamentName,
-        start_date: new Date().toISOString(),
-    };
-
-    fetch(`https://${host}/api/tournaments/create/`, {
-        method: 'POST',
-        headers: {
-            'Authorization': 'Bearer ' + accessToken,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-    })
-    .then(response => {
-        if (!response.ok) {
-            alert(translate('Please enter a tournament name'));
-            throw new Error(translate('Failed to create tournament!'));
-        }
-        return response.json();
-    })
-    .then(data => {
-        const message = `${translate('Tournament created! Tournament ID: ')} ${data.id}`
-        alert(message);
-    })
-    .catch(error => console.error('Error startTournament:', error));
-}
-
-function joinTournament(tournamentId) {
-    const accessToken = localStorage.getItem('access');
-    if (!accessToken) {
-        console.log(translate('No access token found'));
-        return;
-    }
-
-    fetch(`https://${host}/api/tournaments/${tournamentId}/join/`, {
-        method: 'POST',
-        headers: {
-            'Authorization': 'Bearer ' + accessToken,
-        },
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(translate('Failed to join tournament!'));
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log(translate('Joined tournament!'));
-        alert(translate('Joined tournament!'));
-    })
-}
 
 function resetGame() {
     leftPaddle.score = 0;
@@ -581,6 +490,7 @@ function checkWinner() {
         submitMatchHistory(winnerName, loserName, score);
         alert(`${winnerName} wins!`);
         resetGame();
+        drawInstructions();
         resetGameFlags();
     }
 }
@@ -626,45 +536,5 @@ function submitMatchHistory(winner, loser, score) {
     })
     .catch(error => {
         console.log('Error submitMatchHistory:', error);
-    });
-}
-
-function startTournamentMatch() {
-    const accessToken = localStorage.getItem('access');
-    const matchId = document.getElementById('startTournamentMatchInput').value;
-    if (!matchId) {
-        console.log('Please enter a valid match ID');
-        alert('Please enter a valid match ID');
-        return;
-    }
-
-    fetch(`https://${host}/api/matches/${matchId}/`, {
-        method: 'GET',
-        headers: {
-            'Authorization': 'Bearer ' + accessToken,
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Failed to join tournament!');
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log('Tournament Details:', data);
-        window.playerOneId = data.player1;
-        window.playerOne = data.player1_username;
-        window.playerTwoId = data.player2;
-        playerTwoName = data.player2_username;
-        resetGame();
-        gameShouldStart = true;
-        gameStarted = false;
-        mode = 'tournament';
-        console.log('Tournament match started!');
-        document.getElementById('pongCanvas').style.display = 'block';
-    })
-    .catch(error => {
-        console.error('Error startTournamentMatch:', error);
     });
 }

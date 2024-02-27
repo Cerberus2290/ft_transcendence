@@ -405,7 +405,15 @@ input[type="file"] {
 /*Pong settings*/
 #pongCanvas {
 	display: none;
+	width: 50%;
+	height: 50%;
+	left: 30%;
+	top: 50%;
+	position: absolute;
+	margin: 0;
+	z-index: 135;
 }
+
 
 #pongMenu {
 	display: none;

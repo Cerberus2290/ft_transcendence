@@ -254,6 +254,10 @@
     {% block pong %}
     <script type='module' src="{% static 'js/pong.js' %}"></script>
     {% endblock %}
+
+    {% block oldpong %}
+    <script type='module' src="{% static 'js/oldpong.js' %}"></script>
+    {% endblock %}
 <!--pong buttons-->
 <div id="pongMenu" class="pong_menu">
     <ul>
@@ -279,6 +283,7 @@
 <div id="playPongDiv">
     <canvas id="pongCanvas" width="800" height="600"></canvas>
     <canvas id="pauseScreen" width="800" height="600" style="display: none;"></canvas>
+    <canvas id="oldPongCanvas" width="800" height="600" style="display: none;"></canvas>
 </div>
 
 <!--end of pong buttons-->

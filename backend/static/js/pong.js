@@ -55,13 +55,6 @@ let aiDifficultyAdjustmentFactor = 0.1;
 var mode = "local";
 var pauseScreen = document.getElementById("pauseScreen");
 var ctx = pauseScreen.getContext("2d");
-ctx.fillStyle = "black";
-ctx.fillRect(0, 0, pauseScreen.width, pauseScreen.height);
-ctx.fillStyle = "white";
-ctx.textAlign = "center";
-ctx.textBaseline = "middle";
-ctx.font = "30px Arial"
-ctx.fillText("press ENTER to play", pauseScreen.width / 2, pauseScreen.height / 2);
 
 let playerTwoName = 'Player2';
 
@@ -76,7 +69,7 @@ const renderer = new THREE.WebGLRenderer({
     canvas: document.querySelector('canvas'),
     antialias: true
 });
-renderer.setSize( window.innerWidth, window.innerHeight );
+renderer.setSize( window.innerWidth / 2, window.innerHeight / 2);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -297,11 +290,10 @@ var rotationEnabled = false;
 
 
 function animate() {
-    if (gameStarted){
+    if (gameStarted && mode !== 'AI'){
         requestAnimationFrame( animate );
         renderer.render( scene, camera );
         movePaddles();
-        if (mode === 'AI') moveAIPaddle();
         moveBall();
         movePowerup();
         drawScore();
@@ -495,7 +487,7 @@ document.addEventListener("keydown", function(event) {
             event.preventDefault();
             break;
         case 13: // Enter key
-            if (!gameStarted && modeSelected) {
+            if (!gameStarted && mode !== 'AI' && modeSelected) {
                 gameStarted = true;
                 gameShouldStart = true;
                 ctx.beginPath();
@@ -558,16 +550,13 @@ document.getElementById('playPongButtonLocal').addEventListener('click', functio
     mode = 'local';
     const enteredName = document.getElementById('player2NameInput').value;
     playerTwoName = enteredName.trim() || 'Player2';
+    document.getElementById('oldPongCanvas').style.display = 'none';
     resetGame();
     setPauseScreen();
 });
 
-// AI mode button
 document.getElementById('playPongButtonAI').addEventListener('click', function() {
     mode = 'AI';
-    aiMode = true;
-    resetGame();
-    setPauseScreen();
 });
 
 document.getElementById('playPongButtonTournament').addEventListener('click', function() {
@@ -607,16 +596,19 @@ function resetGame() {
 
 function setPauseScreen() {
     modeSelected = true;
+    document.getElementById('pongCanvas').style.display = 'none';
     document.getElementById('pauseScreen').style.display = 'block';
     ctx.clearRect(0, 0, pauseScreen.width, pauseScreen.height);
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, pauseScreen.width, pauseScreen.height);
     ctx.fillStyle = "white";
-    ctx.fillText("press ENTER to play", pauseScreen.width / 2, pauseScreen.height / 2);
+    ctx.font = "20px 'Press Start 2P'";
+    ctx.fillText("press ENTER to play", pauseScreen.width / 2 - 120, pauseScreen.height / 2);
 }
 
 function setPongCanvas() {
-    document.getElementById('pongCanvas').style.display = 'block';
+    if (mode !== 'AI')
+        document.getElementById('pongCanvas').style.display = 'block';
 }
 
 function resetGameFlags() {
@@ -710,6 +702,8 @@ function checkWinner() {
         alert(`${winnerName} wins!`);
         resetGame();
         resetGameFlags();
+
+        setPauseScreen();
     }
 }
 
