@@ -50,6 +50,7 @@ closeButton("profileSettings");
 closeButton("tournamentContainer");
 closeButton("tournamentMatchContainer");
 closeButton("hangman_game_mode");
+closeButton("tournamentView");
 
 // terms of use
 document.getElementById("termsOfUseButton").addEventListener("click", function() {
@@ -121,6 +122,11 @@ document.getElementById("playPongButtonTournament").addEventListener("click", fu
     content2.style.display = content2.style.display === "none" ? "block" : "none";
     let content1 = document.getElementById("tournamentMatchContainer");
     content1.style.display = content1.style.display === "none" ? "block" : "none";
+});
+
+document.getElementById("tournamentView").addEventListener("click", function() {
+    let content = document.getElementById("tournamentView");
+    content.style.display = content.style.display === "none" ? "block" : "none";
 });
 //end of tournament
 

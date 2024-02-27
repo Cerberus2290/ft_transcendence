@@ -532,16 +532,6 @@ function updateStats(winner, loser) {
     });
 }
 
-
-
-
-
-
-
-
-
-
-
 function checkWinner() {
     let winnerId, winnerName, loserName, score;
     let matchId = document.getElementById('startTournamentMatchInput').value;
@@ -562,27 +552,29 @@ function checkWinner() {
             winner_username: winnerName,
         };
 
-        fetch(`https://${host}/api/matches/${matchId}/update/`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': 'Bearer ' + accessToken,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data_winner)
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to update match!');
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Match updated!');
-            alert(`${winnerName} wins!`);
-        })
-        .catch(error => {
-            console.log('Error checkWinner:', error);
-        });
+        if (mode !== 'local' && mode !== 'AI' && mode === 'tournament') {
+            fetch(`https://${host}/api/matches/${matchId}/update/`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': 'Bearer ' + accessToken,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data_winner)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to update match!');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Match updated!');
+                alert(`${winnerName} wins!`);
+            })
+            .catch(error => {
+                console.log('Error checkWinner:', error);
+            });
+        }
 
         score = `${leftPaddle.score} - ${rightPaddle.score}`;
         updateStats(winnerName, loserName);
@@ -668,6 +660,7 @@ function startTournamentMatch() {
         resetGame();
         gameShouldStart = true;
         gameStarted = false;
+        mode = 'tournament';
         console.log('Tournament match started!');
         document.getElementById('pongCanvas').style.display = 'block';
     })
