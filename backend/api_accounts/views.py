@@ -154,44 +154,24 @@ class OAuthCallback(APIView):
 
             user_response = requests.get("https://api.intra.42.fr/v2/me", headers={"Authorization": f"Bearer {access_token}"})
             user_data = user_response.json()
-            print("User data: ", user_data)
 
             username = user_data.get('login')
             email = user_data.get('email', f'{username}@student.42wolfsburg.de')
             picture_url = user_data.get('image', {}).get('versions', {}).get('medium')
-
-            custom_title = ''
-            titles = user_data.get('titles', [])
-            if titles:
-                custom_title = titles[0].get('name', '').split()[0]
-            
-            # user, created = Player.objects.get_or_create(
-            #     email=email.strip(),
-            #     username=username,
-            #     defaults={
-            #         'email': email,
-            #         'username': username,
-            #         'custom_title': custom_title,
-            #     }
-            # )
-            # if created:
-            #     print("\t\t\tUser added successfully!")
-            #     response = requests.get(picture_url)
-            #     if response.status_code == 200:
-            #         user.profile_avatar.save(f"{username}_profile_avatar.jpg", ContentFile(response.content))
-            # else:
-            #     print("\t\t\tUser already exists!")
+        
             try:
                 user = Player.objects.get(email=email.strip())
-                user.username = username
-                user.custom_title = custom_title
-                user.save(update_fields=['username', 'custom_title'])
-                print("\t\t\tUser updated successfully!")
+                print("\t\t\tExisting User logged in successfully!")
             except Player.DoesNotExist:
+                username = user_data.get('login')
+                custom_title = ''
+                titles = user_data.get('titles', [])
+                if titles:
+                    custom_title = titles[0].get('name', '').split()[0]
                 user = Player.objects.create(
                     email=email,
                     username=username,
-                    custom_title=custom_title
+                    custom_title=custom_title,
                 )
                 print("\t\t\tUser added successfully!")
             
