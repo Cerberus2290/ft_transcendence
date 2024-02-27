@@ -277,6 +277,21 @@ class EnableTwoFactorAPIView(APIView):
             return Response({'otp_uri': totp_uri}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+class DisableTwoFactorAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        user.is_two_factor_enabled = False
+        user.save()
+        return Response({'message': '2FA disabled successfully!'}, status=status.HTTP_200_OK)
+    
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def TwoFactorCheck(request):
+    user = request.user
+    return Response({'is_two_factor_enabled': user.is_two_factor_enabled}, status=status.HTTP_200_OK)
+    
 class VerifyTwoFactorAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 

@@ -339,6 +339,38 @@ export var translations = {
         'it': 'Configurazione dell\'autenticazione a due fattori completata!',
     },
 
+    'Disable Two-Factor Authentication' : {
+        'en': 'Disable Two-Factor Authentication',
+        'de': 'Zwei-Faktor-Authentifizierung deaktivieren',
+        'fr': 'Désactiver l\'authentification à deux facteurs',
+        'es': 'Desactivar la autenticación de dos factores',
+        'it': 'Disabilita l\'autenticazione a due fattori',
+    },
+
+    'Error disabling 2FA' : {
+        'en': 'Error disabling 2FA',
+        'de': 'Fehler beim Deaktivieren von 2FA',
+        'fr': 'Erreur de désactivation de 2FA',
+        'es': 'Error al desactivar 2FA',
+        'it': 'Errore durante la disabilitazione del 2FA',
+    },
+
+    'Enable Two-Factor Authentication' : {
+        'en': 'Enable Two-Factor Authentication',
+        'de': 'Zwei-Faktor-Authentifizierung aktivieren',
+        'fr': 'Activer l\'authentification à deux facteurs',
+        'es': 'Habilitar la autenticación de dos factores',
+        'it': 'Abilita l\'autenticazione a due fattori',
+    },
+
+    'Two-Factor authentication disabled!' : {
+        'en': 'Two-Factor authentication disabled!',
+        'de': 'Zwei-Faktor-Authentifizierung deaktiviert!',
+        'fr': 'Authentification à deux facteurs désactivée!',
+        'es': '¡Autenticación de dos factores deshabilitada!',
+        'it': 'Autenticazione a due fattori disabilitata!',
+    },
+
     'New password cannot be empty!' : {
         'en': 'New password cannot be empty!',
         'de': 'Neues Passwort darf nicht leer sein!',

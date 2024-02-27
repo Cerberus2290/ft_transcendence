@@ -98,7 +98,7 @@
     <div class="non-game-element registration_form" id="reg">
         <form id="registrationForm" class="registration_style" method="post">
             {% csrf_token %}
-            <label for="email">{% trans "Email:" %}</label>
+            <label for="email_reg">{% trans "Email:" %}</label>
             <input
                 type="email"
                 id="email_reg"
@@ -107,7 +107,7 @@
                 pattern="[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$"
                 title="{% trans 'Must be a valid email format.' %}"/><br><br>
 
-            <label for="username">{% trans "Username:" %}</label>
+            <label for="username_reg">{% trans "Username:" %}</label>
             <input
                 type="text"
                 id="username_reg"
@@ -116,7 +116,7 @@
                 pattern="[a-zA-Z0-9]+"
                 title="{% trans 'Can only contain [a-z], [A-Z], [0-9].' %}"/><br><br>
 
-            <label for="password">{% trans "Password:" %}</label>
+            <label for="password_reg">{% trans "Password:" %}</label>
             <input
                 type="password"
                 id="password_reg"
@@ -130,10 +130,10 @@
         <form id="loginForm" method="post">
             {% csrf_token %}
             <br>
-            <label for="email">{% trans "Email:" %}</label>
+            <label for="email_login">{% trans "Email:" %}</label>
             <input type="email" id="email_login"><br><br>
 
-            <label for="password">{% trans "Password:" %}</label>
+            <label for="password_login">{% trans "Password:" %}</label>
             <input type="password" id="password_login"><br><br>
             <input type="checkbox" id="togglePasswordLogin">{% trans "Show Password" %}<br><br>
 
@@ -252,11 +252,8 @@
         <li>
             <button id="playPongButtonAI">{% trans "PLAY PONG AGAINST COMPUTER" %}</button>
         </li>
-        <li>
-            <button id="playPongButtonRemote">{% trans "PLAY PONG REMOTELY" %}</button>
-        </li>
         <li id="pongSettings">
-            Pong Settings:
+            {% trans "Pong Settings:" %}
             <ul>
                 <li><button id="changeBackgroundColour">{% trans "CHANGE BACKGROUND" %}</button></li>
                 <li><button id="enablePowerups">{% trans "POWERUPS: OFF" %}</button></li>
@@ -280,7 +277,7 @@
 <!--end of profile block-->
 
 <!--tournament-->
-<div id="tournamentContainer" class=" tournamentContainer">
+<div id="tournamentContainer" class="tournamentContainer">
     <div id="tournamentControls">
         <input type="text" id="tournamentNameInput" placeholder="Enter Tournament Name"><br>
         <button id="createTournamentButton">{% trans "Create a Tournament" %}</button><br>
@@ -298,7 +295,7 @@
 {% endblock %}
 
 {#start of hangman#}
-<div class="non-game-element hangman-style_mode" id="hangman_game_mode">
+<div id="hangman_game_mode" class="non-game-element hangman-style_mode">
     <div class="game-mode-selection" style="text-align: center; margin-top: 20px;">
         <button id="solo-game-button">Solo Game</button>
         <button id="multiplayer-game-button">Multiplayer Game</button>
@@ -334,7 +331,7 @@
 {#end of hangman#}
 
 <!--button for scrolling to top-->
-<div class="non-game-element terms_style" id="termsOfUseContent">
+<div id="termsOfUseContent" class="non-game-element terms_style">
     <button id="scrollToTopBtn" class="scrollToTopBtn" onclick="scrollToTop()">Go Up &#x2191;</button>
     <div data-custom-class="body">
         <div>

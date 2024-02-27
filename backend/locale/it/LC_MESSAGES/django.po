@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-26 14:02+0000\n"
+"POT-Creation-Date: 2024-02-27 09:43+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -156,26 +156,26 @@ msgid "PLAY PONG AGAINST COMPUTER"
 msgstr "GIOCA A PONG CONTRO IL COMPUTER"
 
 #: frontend/templates/frontend/index.html:256
-msgid "PLAY PONG REMOTELY"
-msgstr "GIOCA A PONG DA REMOTO"
+msgid "Pong Settings:"
+msgstr "Impostazioni Pong:"
 
-#: frontend/templates/frontend/index.html:261
+#: frontend/templates/frontend/index.html:258
 msgid "CHANGE BACKGROUND"
 msgstr "CAMBIA SFONDO"
 
-#: frontend/templates/frontend/index.html:262
+#: frontend/templates/frontend/index.html:259
 msgid "POWERUPS: OFF"
 msgstr "ACCENSIONI: SPENTO"
 
-#: frontend/templates/frontend/index.html:286
+#: frontend/templates/frontend/index.html:283
 msgid "Create a Tournament"
 msgstr "Crea un torneo"
 
-#: frontend/templates/frontend/index.html:288
+#: frontend/templates/frontend/index.html:285
 msgid "Join Tournament"
 msgstr "Partecipa al torneo"
 
-#: frontend/templates/frontend/index.html:290
+#: frontend/templates/frontend/index.html:287
 msgid "View Tournament"
 msgstr "Visualizza torneo"
 
@@ -1672,3 +1672,6 @@ msgstr ""
 #: ft_venv/lib/python3.11/site-packages/django/views/templates/default_urlconf.html:248
 msgid "Connect, get help, or contribute"
 msgstr ""
+
+#~ msgid "PLAY PONG REMOTELY"
+#~ msgstr "GIOCA A PONG DA REMOTO"

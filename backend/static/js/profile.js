@@ -376,6 +376,8 @@ document.getElementById('avatarForm').addEventListener('submit', function(event)
 
 document.getElementById('deleteAccountButton').addEventListener('click', function() {
     deleteAccount();
+    alert(translate('Account deleted!'));
+    window.location.reload();
 });
 
 function deleteAccount() {
@@ -420,10 +422,39 @@ function deleteAccount() {
     });
 }
 
-document.getElementById('enable2faButton').addEventListener('click', function(event) {
-    event.preventDefault();
-    enableTwoFactorAuthentication();
+document.addEventListener('DOMContentLoaded', function() {
+    check2FAStatus();
 });
+
+function check2FAStatus() {
+    fetch(`https://${host}/api/2fa-status/`, {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('access'),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        toggle2FAButton(data.is_two_factor_enabled);
+    })
+    .catch(error => {
+        console.error('Error 2FAStatus:', error);
+    });
+}
+
+function toggle2FAButton(isEnabled) {
+    const button = document.getElementById('enable2faButton');
+    if (isEnabled) {
+        button.textContent = translate('Disable Two-Factor Authentication');
+        button.removeEventListener('click', enableTwoFactorAuthentication);
+        button.addEventListener('click', disableTwoFactorAuthentication);
+    } else {
+        button.textContent = translate('Enable Two-Factor Authentication');
+        button.removeEventListener('click', disableTwoFactorAuthentication);
+        button.addEventListener('click', enableTwoFactorAuthentication);
+    }
+}
 
 function enableTwoFactorAuthentication() {
     fetch(`https://${host}/api/enable-2fa/`, {
@@ -444,6 +475,28 @@ function enableTwoFactorAuthentication() {
     })
     .catch((error) => {
         console.log('Error Enable2FA:', error);
+    });
+}
+
+function disableTwoFactorAuthentication() {
+    fetch(`https://${host}/api/disable-2fa/`, {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('access'),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if(!response.ok) {
+            throw new Error(translate('Error disabling 2FA'));
+        }
+        const setupContainer = document.getElementById('twoFactorSetupContainer');
+        setupContainer.innerHTML = '';
+        alert(translate('Two-Factor authentication disabled!'));
+        window.location.reload();
+    })
+    .catch((error) => {
+        console.log('Error Disable2FA:', error);
     });
 }
 
@@ -494,6 +547,7 @@ function verifyTwoFactorCode(code) {
             throw new Error(translate('2FA verification failed'));
         }
         alert(translate('Two-Factor authentication setup complete!'));
+        window.location.reload();
     })
     .catch((error) => {
         console.log('Error Verify2FA:', error);
