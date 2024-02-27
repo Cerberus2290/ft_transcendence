@@ -552,28 +552,29 @@ function checkWinner() {
             winner: winnerId,
             winner_username: winnerName,
         };
-
-        fetch(`https://${host}/api/matches/${matchId}/update/`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': 'Bearer ' + accessToken,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data_winner)
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to update match!');
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Match updated!');
-            alert(`${winnerName} wins!`);
-        })
-        .catch(error => {
-            console.log('Error checkWinner:', error);
-        });
+        if (mode !== 'local' && mode !== 'AI') {
+            fetch(`https://${host}/api/matches/${matchId}/update/`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': 'Bearer ' + accessToken,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data_winner)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to update match!');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Match updated!');
+                alert(`${winnerName} wins!`);
+            })
+            .catch(error => {
+                console.log('Error checkWinner:', error);
+            });
+        }
 
         score = `${leftPaddle.score} - ${rightPaddle.score}`;
         updateStats(winnerName, loserName);

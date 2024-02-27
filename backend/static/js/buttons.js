@@ -117,8 +117,10 @@ document.getElementById("playPongButtonTournament").addEventListener("click", fu
     closeAllMenus();
     let content = document.getElementById("tournamentContainer");
     content.style.display = content.style.display === "none" ? "block" : "none";
+    let content2 = document.getElementById("tournamentControls");
+    content2.style.display = content2.style.display === "none" ? "block" : "none";
     let content1 = document.getElementById("tournamentMatchContainer");
-    content1.style.display = content.style.display === "none" ? "block" : "none";
+    content1.style.display = content1.style.display === "none" ? "block" : "none";
 });
 //end of tournament
 

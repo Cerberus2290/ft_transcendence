@@ -164,21 +164,42 @@ class OAuthCallback(APIView):
             titles = user_data.get('titles', [])
             if titles:
                 custom_title = titles[0].get('name', '').split()[0]
-            user, created = Player.objects.get_or_create(
-                username=username,
-                defaults={
-                    'email': email,
-                    'username': username,
-                    'custom_title': custom_title,
-                }
-            )
-            if created:
+            
+            # user, created = Player.objects.get_or_create(
+            #     email=email.strip(),
+            #     username=username,
+            #     defaults={
+            #         'email': email,
+            #         'username': username,
+            #         'custom_title': custom_title,
+            #     }
+            # )
+            # if created:
+            #     print("\t\t\tUser added successfully!")
+            #     response = requests.get(picture_url)
+            #     if response.status_code == 200:
+            #         user.profile_avatar.save(f"{username}_profile_avatar.jpg", ContentFile(response.content))
+            # else:
+            #     print("\t\t\tUser already exists!")
+            try:
+                user = Player.objects.get(email=email.strip())
+                user.username = username
+                user.custom_title = custom_title
+                user.save(update_fields=['username', 'custom_title'])
+                print("\t\t\tUser updated successfully!")
+            except Player.DoesNotExist:
+                user = Player.objects.create(
+                    email=email,
+                    username=username,
+                    custom_title=custom_title
+                )
                 print("\t\t\tUser added successfully!")
+            
+            if picture_url:
                 response = requests.get(picture_url)
                 if response.status_code == 200:
                     user.profile_avatar.save(f"{username}_profile_avatar.jpg", ContentFile(response.content))
-            else:
-                print("\t\t\tUser already exists!")                
+
             login(request, user)
 
             refresh = RefreshToken.for_user(user)

@@ -595,6 +595,7 @@ function changeUsername() {
         console.log(translate('Username changed successfully!'));
         alert(translate('Username changed successfully!'));
         document.getElementById('changeUsernameForm').reset();
+        window.location.reload();
     })
     .catch(error => {
         console.error('Error ChangeUsername:', error);

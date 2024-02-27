@@ -113,16 +113,12 @@ msgid "View all Users"
 msgstr "Alle Benutzer anzeigen"
 
 #: frontend/templates/frontend/index.html:195
-#, fuzzy
-#| msgid "Username:"
 msgid "Change Username"
-msgstr "Benutzername:"
+msgstr "Benutzernamen ändern"
 
 #: frontend/templates/frontend/index.html:200
-#, fuzzy
-#| msgid "Username:"
 msgid "New Username"
-msgstr "Benutzername:"
+msgstr "Neuer Benutzername"
 
 #: frontend/templates/frontend/index.html:203
 #: frontend/templates/frontend/index.html:221
