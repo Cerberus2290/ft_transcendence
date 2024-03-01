@@ -1,9 +1,4 @@
-import * as THREE from 'three';
 import { getCurrentLanguage, translations } from "./appstate.js";
-
-const BALLSPEED = 0.3;
-const BALLSPEEDMAX = 0.6;
-const PADDLESPEED = 0.2;
 
 document.addEventListener('DOMContentLoaded', function() {
     const startTournamentMatchInput = document.createElement('input');
@@ -27,24 +22,21 @@ function translate(key) {
     return translations[key][currentLanguage];
 }
 
-var fieldWidth = 50;
-var fieldDepth = 1;
-var fieldHeight = fieldWidth / 2;
-var fieldTop = (fieldHeight / 2);
-var fieldBottom = -(fieldHeight / 2);
-var fieldLeft = -(fieldWidth / 2);
-var fieldRight = fieldWidth / 2;
-var paddleWidth = fieldWidth / 70;
-var paddleHeight = fieldHeight / 3.5;
-var gameShouldStart = true;
-var gameStarted = false;
-var darkBackground = true;
-var scoreText = document.getElementById("score");
-var darkColour = 0x111111;
-var lightColour = 0xeeeeee;
-var modeSelected = false;
-var powerupSpeed = 1;
+const canvas = document.getElementById("pongCanvas");
+const ctx = canvas.getContext("2d");
+let mode = 'local';
+let colour = "white"
+let backgroundColour = "black"
 let enablePowerups = false;
+let gameShouldStart = false;
+let gameStarted = false;
+
+// Game constants
+const paddleWidth = 10, paddleHeight = 100;
+const ballRadius = 10;
+let upArrowPressed = false, downArrowPressed = false;
+let wKeyPressed = false, sKeyPressed = false;
+let playerTwoName = 'Player2';
 
 // AI mode
 let aiMode = false;
@@ -52,355 +44,156 @@ let aiLastUpdateTime = 0;
 let aiReactionTime = 500; // Adjusted AI reaction time
 let aiMarginError = 10;
 let aiDifficultyAdjustmentFactor = 0.1;
-var mode = "local";
-var pauseScreen = document.getElementById("pauseScreen");
-var ctx = pauseScreen.getContext("2d");
 
-let playerTwoName = 'Player2';
+// Objects
+const leftPaddle = {
+    x: 0,
+    y: canvas.height / 2 - paddleHeight / 2,
+    width: paddleWidth,
+    height: paddleHeight,
+    dy: 0,
+    score: 0,
+    speed: 1
+};
 
-let upArrowPressed = false, downArrowPressed = false;
-let wKeyPressed = false, sKeyPressed = false;
+const rightPaddle = {
+    x: canvas.width - paddleWidth,
+    y: canvas.height / 2 - paddleHeight / 2,
+    width: paddleWidth,
+    height: paddleHeight,
+    dy: 0,
+    score: 0,
+    speed: 1
+};
 
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
-scene.background = new THREE.Color(0x010101);
-
-const renderer = new THREE.WebGLRenderer({
-    canvas: document.querySelector('canvas'),
-    antialias: true
-});
-renderer.setSize( window.innerWidth / 2, window.innerHeight / 2);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-document.body.appendChild( renderer.domElement );
-
-// camera
-camera.rotation.x = 0.62;
-camera.rotation.y = 0.28;
-camera.rotation.z = 0.35;
-
-camera.position.x = 13;
-camera.position.y = -15;
-camera.position.z = 15.5;
-
-var originalCameraPosition = new THREE.Vector3(14.09, -40, 20);
-var originalCameraRotation = new THREE.Euler(1.41, 0.54, 0, 'XYZ'); 
-var isCameraOriginal = true;
-
-var distance = camera.position.z;
-var center = new THREE.Vector3(0, 0, 0);
-var centerX = window.innerWidth / 2;
-var centerY = window.innerHeight / 2;
-var radius = 20;
-var angle = -Math.PI / 2;
-
-// create field
-var fieldGeometry = new THREE.BoxGeometry(fieldWidth, fieldHeight, fieldDepth, 1, 1, 1);
-var fieldMaterial = new THREE.MeshPhongMaterial({ color: darkColour, side: THREE.BackSide, shininess: 30});
-var field = new THREE.Mesh(fieldGeometry, fieldMaterial);
-field.position.set(0, 0, 0);
-field.receiveShadow = true;
-scene.add(field);
-
-class paddle {
-    constructor(){
-        this.geometry = new THREE.BoxGeometry(paddleWidth, paddleHeight, 0.5, 1, 1, 1);
-        this.material = new THREE.MeshLambertMaterial({ color: lightColour, side: THREE.BackSide });
-        this.object = new THREE.Mesh(this.geometry, this.material);
-        this.x = 0;
-        this.y = window.innerHeight / 2 - paddleHeight / 2;
-        this.width = paddleWidth;
-        this.height = paddleHeight;
-        this.dy = 0;
-        this.score = 0;
-        this.speed = BALLSPEED;
+class powerUp {
+    constructor(colour) {
+    this.colour = colour;
+    this.active = false;
+    this.x = canvas.width / 2;
+    this.y = canvas.height / 2;
+    this.radius = ballRadius;
+    this.dx = 5 * (Math.random() < 0.5 ? -1 : 1);
+    this.dy = 5 * (Math.random() < 0.5 ? -1 : 1);
     }
 };
 
-function getRandomNumberBetween(firstNumber, secondNumber)
-{
-    var randomNumber = (Math.random() < 0.5 ? -1 : 1) * (firstNumber + Math.random() * secondNumber);
-    return (randomNumber);
-}
+let powerup = new powerUp();
 
-class Ball {
-    constructor(colour){
-        this.radius = fieldWidth / 100;
-        this.geometry = new THREE.SphereGeometry(this.radius, 32, 32);
-        this.material = new THREE.MeshBasicMaterial({color: colour});
-        this.object = new THREE.Mesh(this.geometry, this.material);
-        this.x = 0;
-        this.y = 0;
-        this.speed = BALLSPEED;
-        this.dx = 0;
-        this.dy = 0;
-        console.log(this.dx, this.dy);
-        this.active = false;
-        this.reset();
-    }
-    normalizeDirection(){
-        let length = Math.sqrt(this.dx * this.dx + this.dy * this.dy);
-        this.dx /= length;
-        this.dy /= length;
-    }
-    reset(){
-        this.object.position.x = 0;
-        this.object.position.y = 0;
-        this.dx = getRandomNumberBetween(0.4, 0.6);
-        this.dy = getRandomNumberBetween(0.4, 0.6);
-        this.normalizeDirection();
-    }
-};
-
-class enlargePaddle extends Ball {
+class enlargePaddle extends powerUp {
     constructor(){
         super("yellow");
-        this.scale = 0.2;
     }
     power(paddle){
-        if (paddle.speed < 1.2) paddle.speed *= 1.05;
-        paddle.speed = 1.50;
-        paddle.material.color.set(0xf26262);
-        removePowerup();
+        paddle.height += 20;
+        this.active = false;
     }
 };
 
-class speedUpBall extends Ball {
+class speedUpBall extends powerUp {
     constructor(){
         super("red");
     }
     power(paddle){
-        console.log("power");
-        if (paddle.speed < 1.2) paddle.speed *= 1.05;
-        removePowerup();
+        paddle.speed *= 1.2;
+        this.active = false;
     }
 };
 
-var powerup = new Ball("#bbbbbb");
+const ball = {
+    x: canvas.width / 2,
+    y: canvas.height / 2,
+    radius: ballRadius,
+    speed: 1,
+    dx: 5,
+    dy: 5
+};
 
-var ball = new Ball("#eeeeee");
-ball.object.castShadow = true;
-ball.object.receiveShadow = true;
-scene.add(ball.object);
-
-// create paddle
-var leftPaddle = new paddle();
-var rightPaddle = new paddle();
-leftPaddle.object.position.x = -(fieldWidth / 2) + leftPaddle.width;
-rightPaddle.object.position.x = fieldWidth / 2 - leftPaddle.width;
-leftPaddle.object.receiveShadow = true;
-rightPaddle.object.receiveShadow = true;
-rightPaddle.object.position.z += fieldDepth;
-leftPaddle.object.position.z += fieldDepth;
-rightPaddle.object.castShadow = true;
-leftPaddle.object.castShadow = true;
-rightPaddle.object.receiveShadow = true;
-leftPaddle.object.receiveShadow = true;
-scene.add(leftPaddle.object);
-scene.add(rightPaddle.object);
-
-var dottedLineGeometry = new THREE.BufferGeometry();
-var positions = new Float32Array([
-    0, -(fieldHeight / 2) + 1, 0,  
-    0, fieldHeight / 2 - 1, 0    
-]);
-dottedLineGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3)); 
-
-var dottedLineMaterial = new THREE.LineDashedMaterial({
-    color: 0xFFD1DC,
-    dashSize: 0.5,
-    gapSize: 0.5, 
-    opacity: 0.5
-});
-
-var dottedLine = new THREE.Line(dottedLineGeometry, dottedLineMaterial);
-dottedLine.computeLineDistances();
-scene.add(dottedLine);
-
-const ambientLight = new THREE.AmbientLight(0xffffff, 1)
-scene.add(ambientLight)
-const pointLight = new THREE.PointLight(0xffffff, 0.5)
-pointLight.position.x = 2
-pointLight.position.y = 3
-pointLight.position.z = 4
-scene.add(pointLight)
-
-var spotlight = new THREE.DirectionalLight(0xe069ff, 1);
-spotlight.intensity = 0.9;
-spotlight.position.x = -220;
-spotlight.position.y = 177;
-spotlight.position.z = 200;
-spotlight.castShadow = true;
-scene.add(spotlight);
-
-var light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(0, -300, 200);
-light.castShadow = true;
-light.castShadow = true;
-
-light.shadow.mapSize.width = 1024;
-light.shadow.mapSize.height = 1024;
-light.shadow.camera.near = 0.5;
-light.shadow.camera.far = 500;
-light.intensity = 2;
-
-light.position.x = -21;
-light.position.y = -485;
-light.position.z = 199;
-light.intensity = 5;
-light.color.set(0xe069ff);
-scene.add(light);
-
-
-var sensitivity = 0.00004;
-var rotationEnabled = false;
-
-// function resetCamera() {
-//     if (!isCameraOriginal) {
-//         rotationEnabled = false;
-//         camera.position.copy(originalCameraPosition);
-//         camera.rotation.copy(originalCameraRotation);
-//         camera.lookAt(0, 0, 0);
-//         isCameraOriginal = true;
-//     }
-// }
-
-// document.addEventListener('mousemove', function(event) {
-//     if (rotationEnabled){
-//         var deltaX = (event.clientX - centerX) * sensitivity;
-//         var deltaY = (event.clientY - centerY) * sensitivity;
-//         angle = Math.atan2(deltaY, deltaX);
-//         isCameraOriginal = false;
-//     }
-// });
-
-// document.addEventListener('wheel', function(event) {
-//     if (rotationEnabled){
-//         distance -= event.deltaY * sensitivity;
-//         distance = Math.max(distance, 20);
-//         distance = Math.min(distance, 100); 
-//         isCameraOriginal = false;
-//     }
-// });
-
-// document.addEventListener('click', function(event) {
-//     rotationEnabled = !rotationEnabled;
-// });
-
-
-function animate() {
-    if (gameStarted && mode !== 'AI'){
-        requestAnimationFrame( animate );
-        renderer.render( scene, camera );
-        movePaddles();
-        moveBall();
-        movePowerup();
-        drawScore();
-    }
+function drawBackground(backgroundColour)
+{
+    ctx.globalCompositeOperation = 'destination-over'
+    ctx.fillStyle = backgroundColour;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
-animate();
-
-function removePowerup(){
-    scene.remove(powerup.object);
-    powerup.active = false;
+// Draw functions
+function drawPaddle(x, y, width, height) {
+    ctx.fillStyle = colour;
+    ctx.fillRect(x, y, width, height);
 }
 
+function drawBall(x, y, radius, ballColour) {
+    ctx.fillStyle = ballColour;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2, true);
+    ctx.closePath();
+    ctx.fill();
+}
+
+// Game functions
 function movePaddles() {
-    if (wKeyPressed && leftPaddle.object.position.y < fieldTop - leftPaddle.height / 2) 
-        leftPaddle.object.position.y += PADDLESPEED;
-    if (sKeyPressed && (leftPaddle.object.position.y > fieldBottom + leftPaddle.height / 2)) 
-        leftPaddle.object.position.y -= PADDLESPEED;
-    if (upArrowPressed && rightPaddle.object.position.y < fieldTop - leftPaddle.height / 2) 
-        rightPaddle.object.position.y += PADDLESPEED;
-    if (downArrowPressed  && (rightPaddle.object.position.y > fieldBottom + rightPaddle.height / 2)) 
-        rightPaddle.object.position.y -= PADDLESPEED;
+    // Reduced redundant code
+    if (wKeyPressed && leftPaddle.y > 0) leftPaddle.y -= 10;
+    if (sKeyPressed && (leftPaddle.y < canvas.height - leftPaddle.height)) leftPaddle.y += 10;
+    if (upArrowPressed && rightPaddle.y > 0) rightPaddle.y -= 10;
+    if (downArrowPressed && (rightPaddle.y < canvas.height - rightPaddle.height)) rightPaddle.y += 10;
 }
 
 function movePowerup() {
-    randomizePowerup();
     if (powerup.active == true){
-        powerup.object.position.x += powerup.dx * powerup.speed;
-        powerup.object.position.y += powerup.dy * powerup.speed;
-        if (powerup.object.position.y + powerup.radius > fieldTop) powerup.dy = Math.abs(powerup.dy) * -1;
-        else if (powerup.object.position.y - powerup.radius < fieldBottom) powerup.dy = Math.abs(powerup.dy);
-        if (powerup.object.position.x < leftPaddle.object.position.x + leftPaddle.width && powerup.object.position.y > leftPaddle.object.position.y - leftPaddle.height / 2 && powerup.object.position.y < leftPaddle.object.position.y + leftPaddle.height / 2)
+        powerup.x += powerup.dx;
+        powerup.y += powerup.dy;
+
+        if (powerup.y - powerup.radius < 0 || powerup.y + powerup.radius > canvas.height) powerup.dy *= -1;
+        if (powerup.x < leftPaddle.x + leftPaddle.width && powerup.y > leftPaddle.y && powerup.y < leftPaddle.y + leftPaddle.height)
             powerup.power(leftPaddle);
-        else if (powerup.object.position.x > rightPaddle.object.position.x - rightPaddle.width && powerup.object.position.y > rightPaddle.object.position.y - leftPaddle.height / 2 && powerup.object.position.y < rightPaddle.object.position.y + rightPaddle.height / 2) {
+        else if (powerup.x > rightPaddle.x - rightPaddle.width && powerup.y > rightPaddle.y && powerup.y < rightPaddle.y + rightPaddle.height) {
             powerup.power(rightPaddle);
         }
-        if (powerup.object.position.x + powerup.radius > fieldRight || powerup.object.position.x - powerup.radius < fieldLeft)  
-            removePowerup();
-    }
-}
-
-function randomizePowerup() {
-    if (powerup.active == false && enablePowerups == true){
-        let random = Math.round(Math.random() * 2);
-        if (random == 1) {
-            powerup = new enlargePaddle();
-            scene.add(powerup.object);
-            powerup.active = true;
-        } else if (random == 2){
-            powerup = new speedUpBall();
-            scene.add(powerup.object);
-            powerup.active = true;
-        }
+        if (ball.x + ball.radius < 0 || ball.x - ball.radius > canvas.width)  
+            powerup.active = false;
     }
 }
 
 function moveBall() {    
+    ball.x += ball.dx * ball.speed;
+    ball.y += ball.dy * ball.speed;
+    
     // Wall collision (top/bottom)
-    if (ball.object.position.y + ball.radius > fieldTop) ball.dy = Math.abs(ball.dy) * -1;
-    else if (ball.object.position.y - ball.radius < fieldBottom) ball.dy = Math.abs(ball.dy);
-
+    if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) ball.dy *= -1;
+    
     // Paddle collision
-    if (ball.object.position.x < leftPaddle.object.position.x + leftPaddle.width && ball.object.position.y > leftPaddle.object.position.y - leftPaddle.height / 2 && ball.object.position.y < leftPaddle.object.position.y + leftPaddle.height / 2){
-        ball.dx = Math.abs(ball.dx);
+    if (ball.x < leftPaddle.x + leftPaddle.width && ball.y > leftPaddle.y && ball.y < leftPaddle.y + leftPaddle.height)
         paddleCollision(leftPaddle);
-    }
-    else if (ball.object.position.x > rightPaddle.object.position.x - rightPaddle.width && ball.object.position.y > rightPaddle.object.position.y - leftPaddle.height / 2 && ball.object.position.y < rightPaddle.object.position.y + rightPaddle.height / 2){
-        ball.dx = Math.abs(ball.dx) * -1;
+    else if (ball.x > rightPaddle.x - rightPaddle.width && ball.y > rightPaddle.y && ball.y < rightPaddle.y + rightPaddle.height)
         paddleCollision(rightPaddle);
-    }
-    else if (ball.object.position.x + ball.radius > fieldRight || ball.object.position.x - ball.radius < fieldLeft) {
-        if (ball.object.position.x + ball.radius > fieldRight) leftPaddle.score++;
-        else rightPaddle.score++;
-        checkWinner();
-        ball.reset();
-        paddlesReset();
-    }
+    
     // Reset ball if it goes out of bounds
-    ball.object.position.y += (ball.dy * ball.speed) * powerupSpeed;
-    ball.object.position.x += (ball.dx * ball.speed) * powerupSpeed;
+    if (ball.x + ball.radius < 0 || ball.x - ball.radius > canvas.width) {
+        if (ball.x + ball.radius < 0) rightPaddle.score++;
+        else leftPaddle.score++;
+        checkWinner();
+        resetBall();
+    }
 }
 
 function paddleCollision(paddle) {
-    if (Math.abs(ball.dx) < 0.5) ball.dx *= 1.10; ball.dy *= 1.10;
-    powerupSpeed = paddle.speed;
+    ball.dx *= -1;
+    if (Math.abs(ball.dx) < 20) ball.dx *= 1.05, ball.dy *= 1.05;
+    ball.speed = paddle.speed;
 }
 
-function paddlesReset()
-{
-    rightPaddle.speed = 1;
-    leftPaddle.speed = 1;
-    if (darkBackground = true){
-        rightPaddle.material.color.set(lightColour);
-        leftPaddle.material.color.set(lightColour);
-    }
-    else {
-        rightPaddle.material.color.set(darkColour);
-        leftPaddle.material.color.set(lightColour);
-    }
+function resetBall() {
+    ball.x = canvas.width / 2;
+    ball.y = canvas.height / 2;
+    ball.dx = 5 * (Math.random() < 0.5 ? -1 : 1);
+    ball.dy = 5 * (Math.random() < 0.5 ? -1 : 1);
 }
 
 function drawScore() {
-    scoreText.textContent = "Player 1 " + window.playerOne + " : " + leftPaddle.score +  "Player two" + playerTwoName + " : " + rightPaddle.score;
     ctx.font = "20px 'Press Start 2P'";
     ctx.fillStyle = colour;
     
-    // playerName global variable is "window.playerOne"
     const playerName = window.playerOne || 'Player1';
     ctx.fillText(playerName, canvas.width / 4, 30);
     ctx.fillText(leftPaddle.score, canvas.width / 4, 70);
@@ -409,15 +202,22 @@ function drawScore() {
     ctx.fillText(rightPaddle.score, 3 * canvas.width / 4, 70);
 }
 
-// // AI paddle movement
+function drawInstructions() {
+    ctx.font = "20px 'Press Start 2P'";
+    ctx.fillStyle = "white";
+    ctx.fillText("Press ENTER to start", canvas.width / 2 - 120, canvas.height / 2);
+}
+
+// AI paddle movement
 function moveAIPaddle() {
     if (aiMode && Date.now() - aiLastUpdateTime > aiReactionTime) {
         aiLastUpdateTime = Date.now();
         aiAdjustDifficulty();
         let aiPredictBallY = aiPredictBallPosition();
         
-        let aiPaddleCenter = leftPaddle.object.position.y;
+        let aiPaddleCenter = leftPaddle.y + leftPaddle.height / 2;
         let aiTargetY = aiPredictBallY + (Math.random() * 2 - 1) * aiMarginError;
+        
         if (aiTargetY < aiPaddleCenter) {
             wKeyPressed = true;  // AI attempts to move up
             sKeyPressed = false;
@@ -430,12 +230,13 @@ function moveAIPaddle() {
         }
 
         // Apply AI paddle movement based on flags
-        if (wKeyPressed && (leftPaddle.object.position.y < fieldTop - leftPaddle.height / 2))
-            leftPaddle.object.position.y += 0.1; 
-        else if (sKeyPressed && (leftPaddle.object.position.y > fieldBottom + leftPaddle.height / 2))
-            leftPaddle.object.position.y -= 0.1; 
+        if (wKeyPressed && leftPaddle.y > 0) {
+            leftPaddle.y -= 10;  // Move up by 10 units
+        } else if (sKeyPressed && (leftPaddle.y < canvas.height - leftPaddle.height)) {
+            leftPaddle.y += 10;  // Move down by 10 units
         }
     }
+}
 
 function aiAdjustDifficulty() {
     // Adjustments for AI difficulty
@@ -445,32 +246,74 @@ function aiAdjustDifficulty() {
         aiReactionTime += scoreDiff > 2 ? -adjustment : adjustment;
         aiMarginError += scoreDiff > 2 ? -adjustment : adjustment;
     }
+
     aiReactionTime = Math.max(500, Math.min(aiReactionTime, 1500));
     aiMarginError = Math.max(10, Math.min(aiMarginError, 50));
 }
 
 function aiPredictBallPosition() {
     // Optimized AI prediction logic
-    let futureBallX = ball.object.position.x;
-    let futureBallY = ball.object.position.y;
+    let futureBallX = ball.x;
+    let futureBallY = ball.y;
     let futureBallDx = ball.dx;
     let futureBallDy = ball.dy;
 
-    if (futureBallDx <= 0)
-        return ball.object.position.y;
-    while (futureBallX < fieldRight - leftPaddle.width) {
+    if (futureBallDx <= 0) {
+        return ball.y
+    }
+
+    while (futureBallX < canvas.width - paddleWidth) {
         futureBallX += futureBallDx;
         futureBallY += futureBallDy;
-        if (futureBallY - ball.radius < fieldBottom || futureBallY + ball.radius > fieldBottom)
+        if (futureBallY - ball.radius < 0 || futureBallY + ball.radius > canvas.height) {
             futureBallDy *= -1;
+        }
     }
     return futureBallY;
 }
 
-// // Event listeners
+// Game loop
+function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!gameStarted) drawInstructions();
+    else {
+        if (canvas.style.display !== 'none') {
+            movePaddles();
+            if (mode === 'AI') moveAIPaddle();
+            moveBall();
+            movePowerup();
+            draw();
+        }
+    }
+    requestAnimationFrame(gameLoop);
+}
+
+function drawPowerup() {
+    if (powerup.active == false && enablePowerups == true){
+        let random = Math.round(Math.random() * 500);
+        if (random == 1) {
+            powerup = new enlargePaddle();
+            powerup.active = true;
+        } else if (random == 2){
+            powerup = new speedUpBall();
+            powerup.active = true;
+        }
+    }
+    if (powerup.active == true){
+        drawBall(powerup.x, powerup.y, powerup.radius, powerup.colour);}
+}
+
+function draw() {
+    drawPaddle(leftPaddle.x, leftPaddle.y, leftPaddle.width, leftPaddle.height);
+    drawPaddle(rightPaddle.x, rightPaddle.y, rightPaddle.width, rightPaddle.height);
+    drawBall(ball.x, ball.y, ball.radius, colour);
+    drawPowerup();
+    drawScore();
+    drawBackground(backgroundColour);
+}
+
+// Event listeners
 document.addEventListener("keydown", function(event) {
-    event.preventDefault();
-    console.log(event.keyCode);
     switch (event.keyCode) {
         case 87: // W key
             wKeyPressed = gameShouldStart && true;
@@ -487,20 +330,12 @@ document.addEventListener("keydown", function(event) {
             event.preventDefault();
             break;
         case 13: // Enter key
-            if (!gameStarted && mode !== 'AI' && modeSelected) {
+            if (!gameStarted) {
                 gameStarted = true;
                 gameShouldStart = true;
-                ctx.beginPath();
-                ctx.clearRect(0, 0, pauseScreen.width, pauseScreen.height);
-                document.getElementById('pauseScreen').style.display = 'none';
-                setPongCanvas();
-                animate();
             }
             break;
-        case 32:
-            resetCamera();
-            break;
-        }
+    }
 });
 
 document.addEventListener("keyup", function(event) {
@@ -534,29 +369,33 @@ document.getElementById('enablePowerups').addEventListener('click', function() {
 });
 
 document.getElementById('changeBackgroundColour').addEventListener('click', function() {
-    
-    if (darkBackground == true)
-        field.material.color.setHex(0x030626);
-    else {
-        field.material.color.setHex(darkColour);
-        rightPaddle.material.color.setHex(lightColour);
-        leftPaddle.material.color.setHex(lightColour);
-        ball.material.color.setHex(lightColour);
+    switch (backgroundColour) {
+    case "black":
+        colour = "black"
+        backgroundColour = "white"
+        break;
+    case "white":
+        colour = "white"
+        backgroundColour = "black"
+        break;
     }
-    darkBackground = !darkBackground;
 });
 
 document.getElementById('playPongButtonLocal').addEventListener('click', function() {
     mode = 'local';
     const enteredName = document.getElementById('player2NameInput').value;
     playerTwoName = enteredName.trim() || 'Player2';
-    document.getElementById('oldPongCanvas').style.display = 'none';
+    
     resetGame();
-    setPauseScreen();
+    document.getElementById('pongCanvas').style.display = 'block';
 });
 
+// AI mode button
 document.getElementById('playPongButtonAI').addEventListener('click', function() {
     mode = 'AI';
+    aiMode = true;
+    resetGame();
+    document.getElementById('pongCanvas').style.display = 'block';
 });
 
 document.getElementById('playPongButtonTournament').addEventListener('click', function() {
@@ -586,166 +425,6 @@ document.getElementById('joinTournamentButton').addEventListener('click', functi
     document.getElementById('tournamentIDInput').value = '';
 });
    
-function resetGame() {
-    leftPaddle.score = 0;
-    rightPaddle.score = 0;
-    ball.reset();
-    gameShouldStart = true;
-    gameStarted = false;
-}
-
-function setPauseScreen() {
-    modeSelected = true;
-    document.getElementById('pongCanvas').style.display = 'none';
-    document.getElementById('pauseScreen').style.display = 'block';
-    ctx.clearRect(0, 0, pauseScreen.width, pauseScreen.height);
-    ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, pauseScreen.width, pauseScreen.height);
-    ctx.fillStyle = "white";
-    ctx.font = "20px 'Press Start 2P'";
-    ctx.fillText("press ENTER to play", pauseScreen.width / 2 - 120, pauseScreen.height / 2);
-}
-
-function setPongCanvas() {
-    if (mode !== 'AI')
-        document.getElementById('pongCanvas').style.display = 'block';
-}
-
-function resetGameFlags() {
-    gameShouldStart = false;
-    gameStarted = false;
-}
-
-function updateStats(winner, loser) {
-    const accessToken = localStorage.getItem('access');
-    const url = `https://${host}/api/update-stats/`;
-    
-    let data = {
-        winner: winner,
-        loser: loser,
-        gameCompleted: true
-    };
-    
-    if (!accessToken) {
-        console.log('No access token found');
-        return;
-    }
-    
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'Authorization': 'Bearer ' + accessToken,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Stats not updated!');
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log('Stats updated!');
-    })
-    .catch(error => {
-        console.log('Erorr UpdateStats:', error);
-    });
-}
-
-function checkWinner() {
-    let winnerId, winnerName, loserName, score;
-    let matchId = document.getElementById('startTournamentMatchInput').value;
-    if (leftPaddle.score == 5 || rightPaddle.score == 5) {
-        if (leftPaddle.score == 5) {
-            winnerId = window.playerOneId;
-            winnerName = window.playerOne || 'Player1';
-            loserName = playerTwoName || 'Player2';
-        } else {
-            winnerId = window.playerTwoId;
-            winnerName = playerTwoName || 'Player2';
-            loserName = window.playerOne || 'Player1';
-        }
-
-        const accessToken = localStorage.getItem('access');
-        const data_winner = {
-            winner: winnerId,
-            winner_username: winnerName,
-        };
-        if (mode !== 'local' && mode !== 'AI') {
-            fetch(`https://${host}/api/matches/${matchId}/update/`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': 'Bearer ' + accessToken,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data_winner)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to update match!');
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Match updated!');
-                alert(`${winnerName} wins!`);
-            })
-            .catch(error => {
-                console.log('Error checkWinner:', error);
-            });
-        }
-
-        score = `${leftPaddle.score} - ${rightPaddle.score}`;
-        updateStats(winnerName, loserName);
-        submitMatchHistory(winnerName, loserName, score);
-        alert(`${winnerName} wins!`);
-        resetGame();
-        resetGameFlags();
-
-        setPauseScreen();
-    }
-}
-
-function submitMatchHistory(winner, loser, score) {
-    const accessToken = localStorage.getItem('access');
-    if (!accessToken) {
-        console.log('No access token found');
-        return;
-    }
-
-    const url = `https://${host}/api/match-history/`;
-    let data = {
-        player1: window.playerOne || 'Player1',
-        player2: playerTwoName || 'Player2',
-        winner: winner,
-        loser: loser,
-        score: score,
-    };
-
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'Authorization': 'Bearer ' + accessToken,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Failed to submit match history!');
-        }
-        console.log(data);
-        return response.json();
-    })
-    .then(data => {
-        console.log('Match history submitted!');
-    })
-    .catch(error => {
-        console.log('Error submitMatchHistory:', error);
-    });
-}
-
 function startTournament(tournamentName) {
     const accessToken = localStorage.getItem('access');
     if (!accessToken) {
@@ -805,6 +484,151 @@ function joinTournament(tournamentId) {
     })
 }
 
+function resetGame() {
+    leftPaddle.score = 0;
+    rightPaddle.score = 0;
+    resetBall();
+    gameShouldStart = true;
+    gameStarted = false;
+}
+
+// Start the game
+gameLoop();
+
+function updateStats(winner, loser) {
+    const accessToken = localStorage.getItem('access');
+    const url = `https://${host}/api/update-stats/`;
+    
+    let data = {
+        winner: winner,
+        loser: loser,
+        gameCompleted: true
+    };
+    
+    if (!accessToken) {
+        console.log('No access token found');
+        return;
+    }
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + accessToken,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Stats not updated!');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Stats updated!');
+    })
+    .catch(error => {
+        console.log('Erorr UpdateStats:', error);
+    });
+}
+
+function checkWinner() {
+    let winnerId, winnerName, loserName, score;
+    let matchId = document.getElementById('startTournamentMatchInput').value;
+    if (leftPaddle.score == 5 || rightPaddle.score == 5) {
+        if (leftPaddle.score == 5) {
+            winnerId = window.playerOneId;
+            winnerName = window.playerOne || 'Player1';
+            loserName = playerTwoName || 'Player2';
+        } else {
+            winnerId = window.playerTwoId;
+            winnerName = playerTwoName || 'Player2';
+            loserName = window.playerOne || 'Player1';
+        }
+
+        const accessToken = localStorage.getItem('access');
+        const data_winner = {
+            winner: winnerId,
+            winner_username: winnerName,
+        };
+
+        if (mode !== 'local' && mode !== 'AI' && mode === 'tournament') {
+            fetch(`https://${host}/api/matches/${matchId}/update/`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': 'Bearer ' + accessToken,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data_winner)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to update match!');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Match updated!');
+                alert(`${winnerName} wins!`);
+            })
+            .catch(error => {
+                console.log('Error checkWinner:', error);
+            });
+        }
+
+        score = `${leftPaddle.score} - ${rightPaddle.score}`;
+        updateStats(winnerName, loserName);
+        submitMatchHistory(winnerName, loserName, score);
+        alert(`${winnerName} wins!`);
+        resetGame();
+        resetGameFlags();
+    }
+}
+
+function resetGameFlags() {
+    gameShouldStart = false;
+    gameStarted = false;
+}
+
+function submitMatchHistory(winner, loser, score) {
+    const accessToken = localStorage.getItem('access');
+    if (!accessToken) {
+        console.log('No access token found');
+        return;
+    }
+
+    const url = `https://${host}/api/match-history/`;
+    let data = {
+        player1: window.playerOne || 'Player1',
+        player2: playerTwoName || 'Player2',
+        winner: winner,
+        loser: loser,
+        score: score,
+    };
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + accessToken,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to submit match history!');
+        }
+        console.log(data);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Match history submitted!');
+    })
+    .catch(error => {
+        console.log('Error submitMatchHistory:', error);
+    });
+}
+
 function startTournamentMatch() {
     const accessToken = localStorage.getItem('access');
     const matchId = document.getElementById('startTournamentMatchInput').value;
@@ -836,6 +660,7 @@ function startTournamentMatch() {
         resetGame();
         gameShouldStart = true;
         gameStarted = false;
+        mode = 'tournament';
         console.log('Tournament match started!');
         document.getElementById('pongCanvas').style.display = 'block';
     })
