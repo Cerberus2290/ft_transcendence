@@ -18,8 +18,8 @@ backend_exe:
 postgres_exe:
 		docker exec -it postgres_db bash
 
-nginx_exe:
-		docker exec -it nginx bash
+# nginx_exe:
+# 		docker exec -it nginx bash
 
 backend_re:
 		docker compose -f ./docker-compose.yml stop backend
@@ -31,10 +31,10 @@ postgres_re:
 		docker rmi -f postgres:16
 		docker compose -f ./docker-compose.yml up --build -d postgres
 
-nginx_re:
-		docker compose -f ./docker-compose.yml stop nginx
-		docker rmi -f ft_transcendence_nginx
-		docker compose -f ./docker-compose.yml up --build -d nginx
+# nginx_re:
+# 		docker compose -f ./docker-compose.yml stop nginx
+# 		docker rmi -f ft_transcendence_nginx
+# 		docker compose -f ./docker-compose.yml up --build -d nginx
 
 fclean:
 		docker system prune -af
@@ -49,9 +49,9 @@ help:
 		@echo "  up             - run containers"
 		@echo "  backend_exe    - enter backend container"
 		@echo "  postgres_exe   - enter postgres container"
-		@echo "  nginx_exe      - enter nginx container"
+#		@echo "  nginx_exe      - enter nginx container"
 		@echo "  backend_re     - rebuild backend container"
 		@echo "  postgres_re    - rebuild postgres container"
-		@echo "  nginx_re       - rebuild nginx container"
+#		@echo "  nginx_re       - rebuild nginx container"
 		@echo "  fclean         - remove all unused containers, networks, images (both dangling and unreferenced), and optionally, volumes."
 		@echo "  help         	- show this help message and exit"
